@@ -109,12 +109,19 @@ export class HudRenderer {
     ctx.lineWidth = 1.5;
     ctx.strokeRect(barX, barY, barW, barH);
 
-    // Mini-radar markers inside progress bar: Farmer (red), Turkey (gold), Exit (green).
+    // Mini-radar markers inside progress bar: Farmer (red), Hound (orange), Turkey (gold).
     const farmerRatio = Math.min(1, Math.max(0, (engine.farmer.x - 110) / (stageDef.length - 200)));
     ctx.fillStyle = '#EF4444';
     ctx.beginPath();
     ctx.arc(barX + 8 + farmerRatio * (barW - 16), barY + barH * 0.5, 5, 0, Math.PI * 2);
     ctx.fill();
+    if (engine.hound?.active) {
+      const houndRatio = Math.min(1, Math.max(0, (engine.hound.x - 110) / (stageDef.length - 200)));
+      ctx.fillStyle = '#FB923C';
+      ctx.beginPath();
+      ctx.arc(barX + 8 + houndRatio * (barW - 16), barY + barH * 0.5, 4.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.fillStyle = '#FEF08A';
     ctx.beginPath();
     ctx.arc(barX + 8 + progress * (barW - 16), barY + barH * 0.5, 5.5, 0, Math.PI * 2);
@@ -451,98 +458,117 @@ export class HudRenderer {
     ctx.stroke();
     ctx.restore();
 
-    // Farmer on left with overalls, apron, fork & vision beam.
+    // Farmer Silas (3/4 upright illustrated) on left with pitchfork & vision beam.
     ctx.fillStyle = 'rgba(220, 38, 38, 0.30)';
     ctx.beginPath();
     ctx.moveTo(x + 115, y + 186);
     ctx.lineTo(x + 325, y + 112);
-    ctx.lineTo(x + 325, y + 252);
+    ctx.lineTo(x + 325, y + 248);
     ctx.closePath();
     ctx.fill();
 
-    ctx.strokeStyle = '#CBD5E1';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(x + 120, y + 201);
-    ctx.lineTo(x + 162, y + 199);
-    ctx.stroke();
-
+    // Boots & overalls body.
+    ctx.fillStyle = '#3B1E08';
+    ctx.fillRect(x + 92, y + 206, 12, 8);
+    ctx.fillRect(x + 108, y + 206, 12, 8);
     ctx.fillStyle = '#B91C1C';
     ctx.beginPath();
-    ctx.ellipse(x + 108, y + 186, 22, 26, 0, 0, Math.PI * 2);
+    ctx.roundRect(x + 88, y + 174, 34, 32, 8);
     ctx.fill();
     ctx.fillStyle = '#1D4ED8';
-    ctx.fillRect(x + 96, y + 171, 20, 30);
+    ctx.fillRect(x + 93, y + 184, 24, 22);
     ctx.fillStyle = '#FEF3C7';
+    ctx.fillRect(x + 97, y + 188, 16, 18);
+    // Pitchfork.
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.ellipse(x + 118, y + 186, 12, 16, 0, 0, Math.PI * 2);
+    ctx.moveTo(x + 116, y + 190);
+    ctx.lineTo(x + 158, y + 178);
+    ctx.moveTo(x + 154, y + 171);
+    ctx.lineTo(x + 166, y + 168);
+    ctx.moveTo(x + 156, y + 178);
+    ctx.lineTo(x + 168, y + 175);
+    ctx.moveTo(x + 158, y + 185);
+    ctx.lineTo(x + 168, y + 182);
+    ctx.stroke();
+    // Face & straw hat.
+    ctx.fillStyle = '#FDBA74';
+    ctx.beginPath();
+    ctx.arc(x + 105, y + 164, 12, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#FACC15';
     ctx.beginPath();
-    ctx.arc(x + 108, y + 186, 16, 0, Math.PI * 2);
+    ctx.ellipse(x + 105, y + 154, 22, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#EAB308';
+    ctx.beginPath();
+    ctx.roundRect(x + 93, y + 142, 24, 13, 5);
     ctx.fill();
     ctx.fillStyle = '#DC2626';
-    ctx.beginPath();
-    ctx.arc(x + 108, y + 186, 10, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#FDE047';
-    ctx.beginPath();
-    ctx.arc(x + 108, y + 186, 7.5, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(x + 93, y + 151, 24, 3.5);
     ctx.fillStyle = '#FFF4DF';
     ctx.font = 'bold 11px system-ui, sans-serif';
-    ctx.fillText('FARMER SILAS', x + 108, y + 150);
+    ctx.fillText('FARMER SILAS', x + 105, y + 132);
 
-    // Hero Turkey dashing center with 7-feather fan.
+    // Hero Turkey (3/4 upright illustrated) dashing center with tall 7-feather fan.
     const tx = x + 286;
-    const ty = y + 194 + Math.sin(timeSec * 6) * 5;
-    const tailColors = ['#991B1B', '#DC2626', '#EA580C', '#F59E0B', '#EA580C', '#DC2626'];
+    const ty = y + 196 + Math.sin(timeSec * 6) * 5;
+    const tailColors = ['#7F1D1D', '#B91C1C', '#EA580C', '#F59E0B', '#EA580C', '#B91C1C'];
     for (let i = 0; i < 6; i++) {
       ctx.save();
-      ctx.translate(tx, ty);
-      ctx.rotate(-0.6 + i * 0.24);
+      ctx.translate(tx - 10, ty - 4);
+      ctx.rotate(-0.65 + i * 0.25);
       ctx.fillStyle = tailColors[i];
       ctx.beginPath();
-      ctx.ellipse(-20, 0, 16, 5.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(-10, -10, 6.5, 16, -0.35, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#FEF3C7';
+      ctx.beginPath();
+      ctx.ellipse(-14, -22, 3.5, 3, -0.35, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
     ctx.fillStyle = '#92400E';
     ctx.beginPath();
-    ctx.arc(tx, ty, 20, 0, Math.PI * 2);
+    ctx.ellipse(tx, ty, 20, 15, -0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#B45309';
+    ctx.beginPath();
+    ctx.arc(tx + 15, ty - 13, 10, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#F59E0B';
     ctx.beginPath();
-    ctx.moveTo(tx + 18, ty - 5);
-    ctx.lineTo(tx + 33, ty);
-    ctx.lineTo(tx + 18, ty + 5);
+    ctx.moveTo(tx + 23, ty - 17);
+    ctx.lineTo(tx + 36, ty - 12);
+    ctx.lineTo(tx + 23, ty - 8);
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = '#DC2626';
     ctx.beginPath();
-    ctx.arc(tx + 16, ty + 7, 5, 0, Math.PI * 2);
+    ctx.ellipse(tx + 22, ty - 6, 4.5, 6, 0.2, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#FFFFFF';
     ctx.beginPath();
-    ctx.arc(tx + 10, ty - 5, 4, 0, Math.PI * 2);
+    ctx.arc(tx + 17, ty - 15, 4, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#111827';
     ctx.beginPath();
-    ctx.arc(tx + 11.5, ty - 5, 2, 0, Math.PI * 2);
+    ctx.arc(tx + 18.5, ty - 15, 2, 0, Math.PI * 2);
     ctx.fill();
 
     // Comic speech bubble above hero turkey.
     ctx.fillStyle = '#FFFBEB';
     ctx.beginPath();
-    ctx.roundRect(tx - 24, ty - 50, 68, 22, 8);
+    ctx.roundRect(tx - 18, ty - 56, 72, 22, 8);
     ctx.fill();
     ctx.fillStyle = '#9A3412';
     ctx.font = '900 11px system-ui, sans-serif';
-    ctx.fillText('GOBBLE!', tx + 10, ty - 35);
+    ctx.fillText('GOBBLE!', tx + 18, ty - 41);
 
     ctx.fillStyle = '#FEF08A';
-    ctx.font = '800 15px system-ui, sans-serif';
-    ctx.fillText('DASH • HIDE • DECOY • SURVIVE', x + w * 0.5, y + 255);
+    ctx.font = '800 14px system-ui, sans-serif';
+    ctx.fillText('DASH • HIDE • DECOY • 10 PERKS • 12 FEATS', x + w * 0.5, y + 258);
     ctx.restore();
   }
 

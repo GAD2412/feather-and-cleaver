@@ -9,8 +9,10 @@ import {
   VIEW_WIDTH,
 } from './constants.js';
 import { FarmerAI } from './farmer.js';
+import { evaluateRunFeats } from './feats.js';
 import { clamp, distance } from './geometry.js';
 import { HazardManager } from './hazards.js';
+import { HOUND_STATES, ScentHoundAI } from './hound.js';
 import { PerkSystem } from './perks.js';
 import { SeededRng } from './rng.js';
 import { buildStageLayout, STAGE_DEFS } from './stages.js';
@@ -23,6 +25,7 @@ export class GameEngine {
     this.rng = new SeededRng(20261127);
     this.turkey = new Turkey();
     this.farmer = new FarmerAI();
+    this.hound = new ScentHoundAI();
     this.hazards = new HazardManager();
     this.perks = new PerkSystem();
 
@@ -38,6 +41,7 @@ export class GameEngine {
     this.stageStartDist = 0;
     this.closeCalls = 0;
     this.hazardsDodged = 0;
+    this.decoysLured = 0;
     this.combo = 1;
     this.comboTimer = 0;
     this.runTime = 0;
@@ -67,6 +71,7 @@ export class GameEngine {
     this.stageStartDist = 0;
     this.closeCalls = 0;
     this.hazardsDodged = 0;
+    this.decoysLured = 0;
     this.combo = 1;
     this.comboTimer = 0;
     this.runTime = 0;
@@ -93,6 +98,7 @@ export class GameEngine {
     this.stage.speedMult = this.difficulty.speedMult;
     this.turkey.placeForStage(110, (ARENA_TOP + ARENA_BOTTOM) * 0.5);
     this.farmer.configureForStage(this.stage.def, this.turkey.x, this.rng);
+    this.hound.configureForStage(this.stage.def, this.rng);
     this.hazards.populateForStage(this.stage, this.rng);
     this.decoys = [];
     this.cameraX = 0;
@@ -252,19 +258,23 @@ export class GameEngine {
     const worldMouseY = input.mouse.y;
 
     // Keyboard or Mouse Dash.
+    let dashed = false;
     if (input.wasPressed('Space') || input.wasPressed('ShiftLeft') || input.wasPressed('ShiftRight')) {
       const mv = input.getMoveVector();
       const dirX = Math.abs(mv.dx) + Math.abs(mv.dy) > 0.1 ? mv.dx : worldMouseX - this.turkey.x;
       const dirY = Math.abs(mv.dx) + Math.abs(mv.dy) > 0.1 ? mv.dy : worldMouseY - this.turkey.y;
-      this.turkey.tryDash(dirX, dirY, this.perks, this.sound, (x, y, n, k) => this.emitParticles(x, y, n, k));
+      dashed = this.turkey.tryDash(dirX, dirY, this.perks, this.sound, (x, y, n, k) => this.emitParticles(x, y, n, k));
     } else if (input.mouse.leftClicked) {
-      this.turkey.tryDash(
+      dashed = this.turkey.tryDash(
         worldMouseX - this.turkey.x,
         worldMouseY - this.turkey.y,
         this.perks,
         this.sound,
         (x, y, n, k) => this.emitParticles(x, y, n, k),
       );
+    }
+    if (dashed && this.perks.has('gravy_slick_trap')) {
+      this.hazards.greases.push({ x: this.turkey.x, y: this.turkey.y, radius: 34 });
     }
 
     // Decoy throw via E or Right-Click.
@@ -310,9 +320,21 @@ export class GameEngine {
     this.totalDistance = Math.max(this.totalDistance, this.stageStartDist + stageProgressMeters);
 
     this.farmer.update(dt, this.turkey, this.stage, this.decoys, this.perks, this.sound, (decoy) => {
+      this.decoysLured += 1;
       this.score += SCORE_VALUES.decoyLure;
       this.addPopup(`DECOYED! +${SCORE_VALUES.decoyLure}`, decoy.destX, decoy.destY - 22, '#FACC15', 1.1);
     });
+    if (!this.perks.has('scarecrow_cloak') || !this.turkey.hiddenIn || movingSpeed > 18) {
+      this.hound.update(dt, this.turkey, this.farmer, this.stage, this.decoys, this.sound);
+    }
+
+    // Hound nip contact check.
+    if (this.hound.active) {
+      const houndDist = distance(this.turkey.x, this.turkey.y, this.hound.x, this.hound.y);
+      if (houndDist <= this.turkey.radius + this.hound.radius - 3 && !this.turkey.isInvulnerable()) {
+        this._handleTurkeyHit('Nipped by Hound Biscuit!');
+      }
+    }
 
     const dangerRatio = this.farmer.suspicion / 100;
     this.sound?.tickFootstep(dt, movingSpeed > 35 && !this.turkey.hiddenIn, dangerRatio);
@@ -379,8 +401,9 @@ export class GameEngine {
   _awardCloseCall(label, x, y) {
     this.closeCalls += 1;
     this.hazardsDodged += 1;
-    this.combo = Math.min(5, this.combo + 1);
-    this.comboTimer = 4.2;
+    const maxCombo = this.perks.has('golden_spur') ? 6 : 5;
+    this.combo = Math.min(maxCombo, this.combo + 1);
+    this.comboTimer = this.perks.has('golden_spur') ? 6.2 : 4.2;
     const mult = (this.perks.has('cranberry_rush') ? 1.5 : 1) * this.difficulty.scoreMult;
     const pts = Math.round(SCORE_VALUES.closeCall * this.combo * mult);
     this.score += pts;
@@ -435,15 +458,7 @@ export class GameEngine {
   }
 
   getFeats() {
-    const feats = [];
-    if (this.state === GAME_STATES.ESCAPED) feats.push('Woods Survivor');
-    if (this.closeCalls >= 3) feats.push('Featherweight Dodger');
-    if (this.turkey.lives === this.turkey.maxLives && this.state === GAME_STATES.ESCAPED) {
-      feats.push('Untouched Plume');
-    }
-    if (this.score >= 3000) feats.push('Harvest Legend');
-    if (feats.length === 0) feats.push('Brave Gobbler');
-    return feats;
+    return evaluateRunFeats(this);
   }
 
   getRankGrade() {
@@ -482,10 +497,11 @@ export class GameEngine {
       this.comboTimer = 3.2;
 
       const focusOven = this.hazards.ovens.find((o) => o.dirY > 0 && o.x > 650) ?? this.hazards.ovens[0];
-      const baseX = focusOven ? focusOven.x - 24 : 780;
+      const baseX = focusOven ? focusOven.x - 18 : 780;
       this.turkey.x = baseX;
       this.turkey.y = (ARENA_TOP + ARENA_BOTTOM) * 0.56;
-      this.turkey.dashTimer = 0.08;
+      this.turkey.dashTimer = 0.18;
+      this.turkey.invulnTimer = 0.6;
       this.turkey.facing = 0.05;
 
       this.farmer.x = baseX - 245;
@@ -500,7 +516,7 @@ export class GameEngine {
       this.farmer.setCallout(shot === 'kitchen' ? 'CORNERED!' : '! CHASING !', 1.5);
 
       for (const oven of this.hazards.ovens) {
-        if (oven === focusOven || (shot === 'kitchen' && oven.dirY < 0)) {
+        if (oven === focusOven || (shot === 'kitchen' && Math.abs(oven.x - baseX) < 620)) {
           oven.state = 'BLAST';
           oven.phase = oven.cycleDuration * 0.78;
           oven.grazedThisCycle = true;
@@ -508,18 +524,18 @@ export class GameEngine {
       }
       const focusKnife = this.hazards.sweepKnives[1] ?? this.hazards.sweepKnives[0];
       if (focusKnife) {
-        focusKnife.x = baseX + 165;
+        focusKnife.x = baseX + 195;
         focusKnife.state = 'SLICE';
         focusKnife.timer = focusKnife.period * 0.76;
-        focusKnife.bladePos = this.turkey.y - 42;
+        focusKnife.bladePos = this.turkey.y - 36;
         focusKnife.grazedThisSlice = true;
       }
       this.hazards.thrownKnives.push({
-        x: baseX + 295,
-        y: this.turkey.y + 42,
+        x: baseX + 340,
+        y: this.turkey.y + 48,
         vx: -340,
-        vy: -22,
-        angle: Math.PI + 0.08,
+        vy: -18,
+        angle: Math.PI + 0.06,
         spin: 0.7,
         telegraph: 0,
         life: 2.0,
@@ -528,6 +544,12 @@ export class GameEngine {
       });
 
       this.cameraX = clamp(this.turkey.x - VIEW_WIDTH * 0.42, 0, this.stage.def.length - VIEW_WIDTH);
+      this.hound.active = true;
+      this.hound.x = shot === 'kitchen' ? baseX - 115 : baseX - 135;
+      this.hound.y = this.turkey.y + 115;
+      this.hound.facing = Math.atan2(this.turkey.y - this.hound.y, this.turkey.x - this.hound.x);
+      this.hound.state = HOUND_STATES.BARKING;
+      this.hound.setCallout('WOOF!', 1.5);
       this.emitParticles(this.turkey.x - 28, this.turkey.y, 14, 'feather');
       this.popups = [];
       this.addPopup('CLOSE CALL! +450', this.turkey.x + 88, this.turkey.y - 54, '#FBBF24', 1.5);

@@ -136,4 +136,25 @@ export const PERK_CATALOG = [
     desc: 'Wider Close Call radius + brief speed surge on graze.',
     color: '#38BDF8',
   },
+  {
+    id: 'gravy_slick_trap',
+    name: 'Gravy Slick Trap',
+    tag: 'TRICK',
+    desc: 'Flap-Dash drops a gravy puddle that slows Farmer Silas.',
+    color: '#D97706',
+  },
+  {
+    id: 'scarecrow_cloak',
+    name: 'Scarecrow Cloak',
+    tag: 'STEALTH',
+    desc: 'Standing still near cover masks your scent from the Hound.',
+    color: '#84CC16',
+  },
+  {
+    id: 'golden_spur',
+    name: 'Golden Spur',
+    tag: 'COMBO',
+    desc: 'Close Call combo timer lasts 50% longer up to x6.',
+    color: '#FACC15',
+  },
 ];
