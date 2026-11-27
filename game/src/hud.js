@@ -706,7 +706,48 @@ export class HudRenderer {
 
     ctx.fillStyle = '#FFF4DF';
     ctx.font = '900 40px Georgia, serif';
-    ctx.fillText(escaped ? 'ESCAPED THANKSGIVING!' : 'STUFFED BEFORE DINNER!', 600, 188);
+    ctx.fillText(escaped ? 'ESCAPED THANKSGIVING!' : 'STUFFED BEFORE DINNER!', 640, 188);
+
+    // Celebratory Turkey Emblem on upper left of modal (balancing Rank medal on right).
+    ctx.save();
+    ctx.fillStyle = '#3B1B0C';
+    ctx.beginPath();
+    ctx.arc(292, 164, 38, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = escaped ? '#84CC16' : '#EF4444';
+    ctx.lineWidth = 3.5;
+    ctx.stroke();
+    const emColors = ['#991B1B', '#EA580C', '#F59E0B', '#EA580C', '#991B1B'];
+    for (let i = -2; i <= 2; i++) {
+      ctx.save();
+      ctx.translate(284, 166);
+      ctx.rotate(-0.4 + i * 0.25);
+      ctx.fillStyle = emColors[i + 2];
+      ctx.beginPath();
+      ctx.ellipse(-6, -8, 4.5, 11, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = '#92400E';
+    ctx.beginPath();
+    ctx.ellipse(292, 170, 13, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#B45309';
+    ctx.beginPath();
+    ctx.arc(302, 160, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#F59E0B';
+    ctx.beginPath();
+    ctx.moveTo(308, 158);
+    ctx.lineTo(316, 161);
+    ctx.lineTo(308, 163);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#DC2626';
+    ctx.beginPath();
+    ctx.arc(307, 165, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
     // Rank medal badge on upper right of modal.
     const rank = engine.getRankGrade();

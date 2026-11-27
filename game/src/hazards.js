@@ -25,7 +25,7 @@ export class HazardManager {
     for (let i = 0; i < def.ovenCount; i++) {
       const ox = 330 + ((def.length - 580) * (i + 0.5)) / def.ovenCount + rng.range(-30, 30);
       const fromTop = i % 2 === 0;
-      const oy = fromTop ? ARENA_TOP + 26 : ARENA_BOTTOM - 26;
+      const oy = fromTop ? ARENA_TOP + 36 : ARENA_BOTTOM - 26;
       this.ovens.push({
         id: i,
         x: ox,

@@ -516,9 +516,9 @@ export class GameEngine {
       this.farmer.setCallout(shot === 'kitchen' ? 'CORNERED!' : '! CHASING !', 1.5);
 
       for (const oven of this.hazards.ovens) {
-        if (oven === focusOven || (shot === 'kitchen' && Math.abs(oven.x - baseX) < 620)) {
+        if (oven === focusOven || (shot === 'kitchen' && Math.abs(oven.x - baseX) < 760)) {
           oven.state = 'BLAST';
-          oven.phase = oven.cycleDuration * 0.78;
+          oven.phase = oven.cycleDuration * 0.745;
           oven.grazedThisCycle = true;
         }
       }
