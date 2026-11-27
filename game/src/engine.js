@@ -1,6 +1,7 @@
 import {
   ARENA_BOTTOM,
   ARENA_TOP,
+  DIFFICULTY_MODES,
   FARMER_STATES,
   GAME_STATES,
   SCORE_VALUES,
@@ -26,6 +27,7 @@ export class GameEngine {
     this.perks = new PerkSystem();
 
     this.state = GAME_STATES.TITLE;
+    this.difficulty = DIFFICULTY_MODES.classic;
     this.stageIndex = 0;
     this.stage = null;
     this.cameraX = 0;
@@ -40,6 +42,8 @@ export class GameEngine {
     this.comboTimer = 0;
     this.runTime = 0;
     this.caughtReason = '';
+    this.turkeyQuip = '';
+    this.turkeyQuipTimer = 0;
 
     this.decoys = [];
     this.particles = [];
@@ -74,18 +78,31 @@ export class GameEngine {
     this.sound?.playGobble();
   }
 
+  setDifficulty(id) {
+    this.difficulty = DIFFICULTY_MODES[id] ?? DIFFICULTY_MODES.classic;
+  }
+
+  setTurkeyQuip(text, duration = 1.0) {
+    this.turkeyQuip = text;
+    this.turkeyQuipTimer = duration;
+  }
+
   setupStage(index, titlePreview = false) {
     this.stageIndex = index;
     this.stage = buildStageLayout(index, this.rng);
+    this.stage.speedMult = this.difficulty.speedMult;
     this.turkey.placeForStage(110, (ARENA_TOP + ARENA_BOTTOM) * 0.5);
     this.farmer.configureForStage(this.stage.def, this.turkey.x, this.rng);
     this.hazards.populateForStage(this.stage, this.rng);
     this.decoys = [];
     this.cameraX = 0;
+    this.turkeyQuip = '';
+    this.turkeyQuipTimer = 0;
     if (titlePreview) {
       this.popups = [];
     } else {
       this.addPopup(`STAGE ${index + 1}: ${this.stage.def.name.toUpperCase()}`, this.turkey.x + 120, this.turkey.y - 50, '#FBBF24', 1.9);
+      this.setTurkeyQuip('GOBBLE!', 0.9);
     }
   }
 
@@ -364,7 +381,7 @@ export class GameEngine {
     this.hazardsDodged += 1;
     this.combo = Math.min(5, this.combo + 1);
     this.comboTimer = 4.2;
-    const mult = this.perks.has('cranberry_rush') ? 1.5 : 1;
+    const mult = (this.perks.has('cranberry_rush') ? 1.5 : 1) * this.difficulty.scoreMult;
     const pts = Math.round(SCORE_VALUES.closeCall * this.combo * mult);
     this.score += pts;
     if (this.perks.has('narrow_escape_sense')) {
@@ -372,6 +389,7 @@ export class GameEngine {
     }
     this.sound?.playCloseCall();
     this.addPopup(`${label} +${pts}`, x, y, '#FBBF24', 1.25);
+    this.setTurkeyQuip(label.includes('OVEN') ? 'TOO HOT!' : 'YIKES!', 0.85);
   }
 
   _handleTurkeyHit(reason) {
@@ -391,6 +409,9 @@ export class GameEngine {
   }
 
   _updateEffects(dt) {
+    if (this.turkeyQuipTimer > 0) {
+      this.turkeyQuipTimer = Math.max(0, this.turkeyQuipTimer - dt);
+    }
     if (this.shakeTimer > 0) {
       this.shakeTimer = Math.max(0, this.shakeTimer - dt);
       if (this.shakeTimer <= 0) this.shakeIntensity = 0;
@@ -425,6 +446,13 @@ export class GameEngine {
     return feats;
   }
 
+  getRankGrade() {
+    if (this.state === GAME_STATES.ESCAPED && this.score >= 4000) return { grade: 'S', title: 'GRAND GOBBLER', color: '#FACC15' };
+    if (this.state === GAME_STATES.ESCAPED || this.score >= 2800) return { grade: 'A', title: 'FLEET FEATHER', color: '#84CC16' };
+    if (this.score >= 1500) return { grade: 'B', title: 'CRAFTY FOWL', color: '#38BDF8' };
+    return { grade: 'C', title: 'LUCKY PLUME', color: '#FB923C' };
+  }
+
   /**
    * Optional deterministic scenario setup via URL query (?shot=cover|kitchen|perk|caught|escaped)
    * using real engine objects for repeatable visual inspection.
@@ -441,54 +469,56 @@ export class GameEngine {
     }
 
     if (shot === 'cover' || shot === 'kitchen') {
-      const idx = shot === 'kitchen' ? 3 : 2;
+      const idx = shot === 'kitchen' ? 3 : 0;
       this.setupStage(idx, true);
-      this.perks.ownedIds = ['greased_feathers', 'corn_bait_master'];
+      this.perks.ownedIds = shot === 'kitchen' ? ['greased_feathers', 'corn_bait_master', 'double_flap'] : ['greased_feathers', 'corn_bait_master'];
       this.turkey.maxDashes = 3;
       this.turkey.dashCharges = 2;
       this.turkey.lives = 3;
-      this.score = shot === 'kitchen' ? 2840 : 1690;
-      this.totalDistance = shot === 'kitchen' ? 425 : 275;
-      this.closeCalls = shot === 'kitchen' ? 7 : 4;
+      this.score = shot === 'kitchen' ? 3420 : 1890;
+      this.totalDistance = shot === 'kitchen' ? 465 : 195;
+      this.closeCalls = shot === 'kitchen' ? 8 : 4;
       this.combo = shot === 'kitchen' ? 4 : 3;
       this.comboTimer = 3.2;
 
       const focusOven = this.hazards.ovens.find((o) => o.dirY > 0 && o.x > 650) ?? this.hazards.ovens[0];
-      const baseX = focusOven ? focusOven.x - 38 : 780;
+      const baseX = focusOven ? focusOven.x - 24 : 780;
       this.turkey.x = baseX;
       this.turkey.y = (ARENA_TOP + ARENA_BOTTOM) * 0.56;
-      this.turkey.dashTimer = 0.12;
+      this.turkey.dashTimer = 0.08;
       this.turkey.facing = 0.05;
 
-      this.farmer.x = baseX - 220;
-      this.farmer.y = this.turkey.y - 38;
+      this.farmer.x = baseX - 245;
+      this.farmer.y = this.turkey.y - 34;
       this.farmer._clampAndResolve(this.stage);
-      if (this.stage.obstacles.some((o) => Math.abs(this.farmer.x - (o.x + o.w * 0.5)) < o.w * 0.65 && Math.abs(this.farmer.y - (o.y + o.h * 0.5)) < o.h)) {
-        this.farmer.y = ARENA_TOP + 125;
+      if (this.stage.obstacles.some((o) => Math.abs(this.farmer.x - (o.x + o.w * 0.5)) < o.w * 0.65 && Math.abs(this.farmer.y - (o.y + o.h * 0.5)) < o.h + 10)) {
+        this.farmer.y = ARENA_TOP + 130;
       }
       this.farmer.facing = Math.atan2(this.turkey.y - this.farmer.y, this.turkey.x - this.farmer.x);
       this.farmer.state = shot === 'kitchen' ? FARMER_STATES.CORNERING : FARMER_STATES.CHASING;
       this.farmer.suspicion = 100;
       this.farmer.setCallout(shot === 'kitchen' ? 'CORNERED!' : '! CHASING !', 1.5);
 
-      if (focusOven) {
-        focusOven.state = 'BLAST';
-        focusOven.phase = focusOven.cycleDuration * 0.77;
-        focusOven.grazedThisCycle = true;
+      for (const oven of this.hazards.ovens) {
+        if (oven === focusOven || (shot === 'kitchen' && oven.dirY < 0)) {
+          oven.state = 'BLAST';
+          oven.phase = oven.cycleDuration * 0.78;
+          oven.grazedThisCycle = true;
+        }
       }
       const focusKnife = this.hazards.sweepKnives[1] ?? this.hazards.sweepKnives[0];
       if (focusKnife) {
-        focusKnife.x = baseX + 120;
+        focusKnife.x = baseX + 165;
         focusKnife.state = 'SLICE';
         focusKnife.timer = focusKnife.period * 0.76;
-        focusKnife.bladePos = this.turkey.y - 46;
+        focusKnife.bladePos = this.turkey.y - 42;
         focusKnife.grazedThisSlice = true;
       }
       this.hazards.thrownKnives.push({
-        x: baseX + 250,
-        y: this.turkey.y + 38,
+        x: baseX + 295,
+        y: this.turkey.y + 42,
         vx: -340,
-        vy: -24,
+        vy: -22,
         angle: Math.PI + 0.08,
         spin: 0.7,
         telegraph: 0,
@@ -498,9 +528,10 @@ export class GameEngine {
       });
 
       this.cameraX = clamp(this.turkey.x - VIEW_WIDTH * 0.42, 0, this.stage.def.length - VIEW_WIDTH);
-      this.emitParticles(this.turkey.x - 26, this.turkey.y, 12, 'feather');
+      this.emitParticles(this.turkey.x - 28, this.turkey.y, 14, 'feather');
       this.popups = [];
-      this.addPopup('CLOSE CALL! +450', this.turkey.x + 56, this.turkey.y - 42, '#FBBF24', 1.5);
+      this.addPopup('CLOSE CALL! +450', this.turkey.x + 88, this.turkey.y - 54, '#FBBF24', 1.5);
+      this.setTurkeyQuip(shot === 'kitchen' ? 'TOO HOT!' : 'YIKES!', 1.5);
       this.state = GAME_STATES.PLAYING;
       return;
     }

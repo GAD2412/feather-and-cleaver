@@ -109,6 +109,20 @@ export class HudRenderer {
     ctx.lineWidth = 1.5;
     ctx.strokeRect(barX, barY, barW, barH);
 
+    // Mini-radar markers inside progress bar: Farmer (red), Turkey (gold), Exit (green).
+    const farmerRatio = Math.min(1, Math.max(0, (engine.farmer.x - 110) / (stageDef.length - 200)));
+    ctx.fillStyle = '#EF4444';
+    ctx.beginPath();
+    ctx.arc(barX + 8 + farmerRatio * (barW - 16), barY + barH * 0.5, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#FEF08A';
+    ctx.beginPath();
+    ctx.arc(barX + 8 + progress * (barW - 16), barY + barH * 0.5, 5.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#451A03';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
     // 3. Lives (Tail Feathers).
     ctx.textAlign = 'left';
     ctx.fillStyle = '#FDE68A';
@@ -239,8 +253,8 @@ export class HudRenderer {
     ctx.fillText('THANKSGIVING STEALTH-ARCADE ESCAPE', 108, 108);
 
     ctx.fillStyle = '#FFF4DF';
-    ctx.font = '900 62px Georgia, serif';
-    ctx.fillText('FEATHER & CLEAVER', 108, 174);
+    ctx.font = '900 54px Georgia, serif';
+    ctx.fillText('FEATHER & CLEAVER', 108, 172);
 
     ctx.fillStyle = '#F5E1BE';
     ctx.font = '500 20px system-ui, sans-serif';
@@ -299,6 +313,35 @@ export class HudRenderer {
       ctx.fillText(desc, 898, ry);
     });
 
+    // Difficulty mode selector pills on Title screen.
+    const isRush = engine.difficulty?.id === 'rush';
+    this._drawButton(ctx, engine, {
+      id: 'btn-mode-classic',
+      x: 840,
+      y: 122,
+      w: 158,
+      h: 46,
+      label: 'CLASSIC',
+      sublabel: 'Balanced (1.0x)',
+      bg: !isRush ? '#65A30D' : '#3B1B0C',
+      hoverBg: '#84CC16',
+      textColor: !isRush ? '#1E1109' : '#F5E1BE',
+      onClick: () => engine.setDifficulty('classic'),
+    });
+    this._drawButton(ctx, engine, {
+      id: 'btn-mode-rush',
+      x: 1010,
+      y: 122,
+      w: 160,
+      h: 46,
+      label: "CHEF'S RUSH",
+      sublabel: 'Hard (1.5x pts)',
+      bg: isRush ? '#DC2626' : '#3B1B0C',
+      hoverBg: '#EF4444',
+      textColor: '#FFFBEB',
+      onClick: () => engine.setDifficulty('rush'),
+    });
+
     // 5-Stage route strip.
     ctx.textAlign = 'left';
     ctx.fillStyle = '#FBBF24';
@@ -338,92 +381,129 @@ export class HudRenderer {
     ctx.roundRect(x, y, w, h, 16);
     ctx.clip();
 
-    // Ground strip.
+    // Autumn sunset sky gradient.
+    const sky = ctx.createLinearGradient(x, y, x, y + 170);
+    sky.addColorStop(0, '#431407');
+    sky.addColorStop(0.55, '#9A3412');
+    sky.addColorStop(1, '#EA580C');
+    ctx.fillStyle = sky;
+    ctx.fillRect(x, y, w, 175);
+
+    // Harvest moon & distant barn silhouette.
+    ctx.fillStyle = 'rgba(254, 240, 138, 0.85)';
+    ctx.beginPath();
+    ctx.arc(x + 88, y + 54, 28, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#451A03';
+    ctx.beginPath();
+    ctx.moveTo(x + 150, y + 165);
+    ctx.lineTo(x + 150, y + 115);
+    ctx.lineTo(x + 195, y + 84);
+    ctx.lineTo(x + 240, y + 115);
+    ctx.lineTo(x + 240, y + 165);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#F59E0B';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 178, y + 126, 34, 34);
+
+    // Ground strip with autumn grass + fence line.
     ctx.fillStyle = '#5B6E29';
     ctx.fillRect(x, y + 165, w, h - 165);
+    ctx.fillStyle = '#78350F';
+    ctx.fillRect(x, y + 158, w, 8);
 
     // Mini Oven on right with stovetop burners & roast glow.
     ctx.fillStyle = '#1F2937';
-    ctx.fillRect(x + 410, y + 116, 86, 76);
+    ctx.fillRect(x + 412, y + 118, 88, 78);
     ctx.strokeStyle = '#9CA3AF';
     ctx.lineWidth = 2;
-    ctx.strokeRect(x + 410, y + 116, 86, 76);
+    ctx.strokeRect(x + 412, y + 118, 88, 78);
     ctx.fillStyle = '#F97316';
-    ctx.fillRect(x + 426, y + 136, 54, 38);
+    ctx.fillRect(x + 428, y + 138, 56, 38);
+    ctx.fillStyle = '#FEF08A';
+    ctx.fillRect(x + 436, y + 146, 40, 20);
     ctx.fillStyle = '#FEF08A';
     ctx.font = 'bold 12px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('ROAST OVEN', x + 453, y + 104);
+    ctx.fillText('OVEN 450°F', x + 456, y + 106);
 
     // Gleaming carving knife hovering mid-air.
     ctx.save();
-    ctx.translate(x + 335, y + 88 + Math.sin(timeSec * 3) * 6);
+    ctx.translate(x + 332, y + 86 + Math.sin(timeSec * 3) * 6);
     ctx.rotate(-0.4);
     ctx.fillStyle = '#78350F';
     ctx.fillRect(-30, -5, 18, 10);
     ctx.fillStyle = '#E2E8F0';
     ctx.beginPath();
     ctx.moveTo(-12, -7);
-    ctx.lineTo(34, -2);
+    ctx.lineTo(36, -2);
     ctx.lineTo(28, 7);
     ctx.lineTo(-12, 7);
     ctx.closePath();
     ctx.fill();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-10, -4);
+    ctx.lineTo(32, -1);
+    ctx.stroke();
     ctx.restore();
 
     // Farmer on left with overalls, apron, fork & vision beam.
-    ctx.fillStyle = 'rgba(220, 38, 38, 0.28)';
+    ctx.fillStyle = 'rgba(220, 38, 38, 0.30)';
     ctx.beginPath();
-    ctx.moveTo(x + 115, y + 180);
-    ctx.lineTo(x + 320, y + 110);
-    ctx.lineTo(x + 320, y + 250);
+    ctx.moveTo(x + 115, y + 186);
+    ctx.lineTo(x + 325, y + 112);
+    ctx.lineTo(x + 325, y + 252);
     ctx.closePath();
     ctx.fill();
 
     ctx.strokeStyle = '#CBD5E1';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(x + 120, y + 195);
-    ctx.lineTo(x + 158, y + 193);
+    ctx.moveTo(x + 120, y + 201);
+    ctx.lineTo(x + 162, y + 199);
     ctx.stroke();
 
     ctx.fillStyle = '#B91C1C';
     ctx.beginPath();
-    ctx.ellipse(x + 108, y + 180, 22, 26, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 108, y + 186, 22, 26, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#1D4ED8';
-    ctx.fillRect(x + 96, y + 165, 20, 30);
+    ctx.fillRect(x + 96, y + 171, 20, 30);
     ctx.fillStyle = '#FEF3C7';
     ctx.beginPath();
-    ctx.ellipse(x + 118, y + 180, 12, 16, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 118, y + 186, 12, 16, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#FACC15';
     ctx.beginPath();
-    ctx.arc(x + 108, y + 180, 16, 0, Math.PI * 2);
+    ctx.arc(x + 108, y + 186, 16, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#DC2626';
     ctx.beginPath();
-    ctx.arc(x + 108, y + 180, 10, 0, Math.PI * 2);
+    ctx.arc(x + 108, y + 186, 10, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#FDE047';
     ctx.beginPath();
-    ctx.arc(x + 108, y + 180, 7.5, 0, Math.PI * 2);
+    ctx.arc(x + 108, y + 186, 7.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#FFF4DF';
     ctx.font = 'bold 11px system-ui, sans-serif';
-    ctx.fillText('FARMER', x + 108, y + 144);
+    ctx.fillText('FARMER SILAS', x + 108, y + 150);
 
-    // Hero Turkey dashing center.
-    const tx = x + 285;
-    const ty = y + 190 + Math.sin(timeSec * 6) * 5;
-    const tailColors = ['#B91C1C', '#EA580C', '#F59E0B', '#D97706'];
-    for (let i = 0; i < 4; i++) {
+    // Hero Turkey dashing center with 7-feather fan.
+    const tx = x + 286;
+    const ty = y + 194 + Math.sin(timeSec * 6) * 5;
+    const tailColors = ['#991B1B', '#DC2626', '#EA580C', '#F59E0B', '#EA580C', '#DC2626'];
+    for (let i = 0; i < 6; i++) {
       ctx.save();
       ctx.translate(tx, ty);
-      ctx.rotate(-0.4 + i * 0.25);
+      ctx.rotate(-0.6 + i * 0.24);
       ctx.fillStyle = tailColors[i];
       ctx.beginPath();
-      ctx.ellipse(-20, 0, 16, 6, 0, 0, Math.PI * 2);
+      ctx.ellipse(-20, 0, 16, 5.5, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
@@ -434,7 +514,7 @@ export class HudRenderer {
     ctx.fillStyle = '#F59E0B';
     ctx.beginPath();
     ctx.moveTo(tx + 18, ty - 5);
-    ctx.lineTo(tx + 32, ty);
+    ctx.lineTo(tx + 33, ty);
     ctx.lineTo(tx + 18, ty + 5);
     ctx.closePath();
     ctx.fill();
@@ -442,10 +522,27 @@ export class HudRenderer {
     ctx.beginPath();
     ctx.arc(tx + 16, ty + 7, 5, 0, Math.PI * 2);
     ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(tx + 10, ty - 5, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.arc(tx + 11.5, ty - 5, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Comic speech bubble above hero turkey.
+    ctx.fillStyle = '#FFFBEB';
+    ctx.beginPath();
+    ctx.roundRect(tx - 24, ty - 50, 68, 22, 8);
+    ctx.fill();
+    ctx.fillStyle = '#9A3412';
+    ctx.font = '900 11px system-ui, sans-serif';
+    ctx.fillText('GOBBLE!', tx + 10, ty - 35);
 
     ctx.fillStyle = '#FEF08A';
     ctx.font = '800 15px system-ui, sans-serif';
-    ctx.fillText('DASH • HIDE • DECOY • SURVIVE', x + w * 0.5, y + 250);
+    ctx.fillText('DASH • HIDE • DECOY • SURVIVE', x + w * 0.5, y + 255);
     ctx.restore();
   }
 
@@ -579,11 +676,28 @@ export class HudRenderer {
     ctx.textAlign = 'center';
     ctx.fillStyle = escaped ? '#A3E635' : '#F87171';
     ctx.font = '800 16px system-ui, sans-serif';
-    ctx.fillText(escaped ? 'FREEDOM WOODS REACHED!' : `CAUGHT BY: ${engine.caughtReason.toUpperCase()}`, 640, 138);
+    ctx.fillText(escaped ? 'FREEDOM WOODS REACHED!' : `CAUGHT BY: ${engine.caughtReason.toUpperCase()}`, 640, 134);
 
     ctx.fillStyle = '#FFF4DF';
-    ctx.font = '900 48px Georgia, serif';
-    ctx.fillText(escaped ? 'ESCAPED THANKSGIVING!' : 'STUFFED BEFORE DINNER!', 640, 194);
+    ctx.font = '900 40px Georgia, serif';
+    ctx.fillText(escaped ? 'ESCAPED THANKSGIVING!' : 'STUFFED BEFORE DINNER!', 600, 188);
+
+    // Rank medal badge on upper right of modal.
+    const rank = engine.getRankGrade();
+    ctx.save();
+    ctx.fillStyle = '#3B1B0C';
+    ctx.beginPath();
+    ctx.arc(988, 164, 38, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = rank.color;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.fillStyle = rank.color;
+    ctx.font = '900 32px Georgia, serif';
+    ctx.fillText(rank.grade, 988, 170);
+    ctx.font = '800 10px system-ui, sans-serif';
+    ctx.fillText('RANK', 988, 188);
+    ctx.restore();
 
     // 6-card stats grid.
     const stats = [

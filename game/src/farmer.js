@@ -162,7 +162,7 @@ export class FarmerAI {
 
     let targetX = this.x;
     let targetY = this.y;
-    let speed = stage.def.farmerSpeed;
+    let speed = stage.def.farmerSpeed * (stage.speedMult ?? 1);
 
     // Lunge execution during CHASING or CORNERING.
     if (this.lungeWindup > 0) {
@@ -205,13 +205,33 @@ export class FarmerAI {
       speed *= 0.9;
     } else if (this.state === FARMER_STATES.SEARCHING) {
       this.stateTimer -= dt;
-      if (this.lastSeenPos && distance(this.x, this.y, this.lastSeenPos.x, this.lastSeenPos.y) > 26) {
-        targetX = this.lastSeenPos.x;
-        targetY = this.lastSeenPos.y;
-        speed *= 0.92;
+      // If a cover is close to lastSeenPos, inspect that cover directly.
+      let searchTarget = this.lastSeenPos;
+      if (this.lastSeenPos && this.stateTimer < 2.2) {
+        let nearestCover = null;
+        let bestDist = 135;
+        for (const c of stage.covers) {
+          const cd = distance(this.lastSeenPos.x, this.lastSeenPos.y, c.x, c.y);
+          if (cd < bestDist) {
+            bestDist = cd;
+            nearestCover = c;
+          }
+        }
+        if (nearestCover) {
+          searchTarget = { x: nearestCover.x, y: nearestCover.y };
+          if (distance(this.x, this.y, nearestCover.x, nearestCover.y) < 52) {
+            nearestCover.rustle = Math.max(nearestCover.rustle, 0.7);
+            if (this.calloutTimer <= 0) this.setCallout('CHECKING COVER!', 0.9);
+          }
+        }
+      }
+      if (searchTarget && distance(this.x, this.y, searchTarget.x, searchTarget.y) > 26) {
+        targetX = searchTarget.x;
+        targetY = searchTarget.y;
+        speed *= 0.94;
       } else {
         speed = 0;
-        this.facing = normalizeAngle(this.searchAngle + Math.sin(this.stateTimer * 3.6) * 1.15);
+        this.facing = normalizeAngle(this.searchAngle + Math.sin(this.stateTimer * 3.8) * 1.25);
       }
       if (this.stateTimer <= 0) {
         this.state = FARMER_STATES.PATROL;

@@ -49,6 +49,25 @@ export const SCORE_VALUES = {
   escapeVictory: 1500,
 };
 
+export const DIFFICULTY_MODES = {
+  classic: {
+    id: 'classic',
+    label: 'Classic Escape',
+    desc: 'Balanced stealth & dodge',
+    speedMult: 1.0,
+    hazardMult: 1.0,
+    scoreMult: 1.0,
+  },
+  rush: {
+    id: 'rush',
+    label: "Chef's Rush",
+    desc: 'Faster farmer • 1.5x score',
+    speedMult: 1.14,
+    hazardMult: 1.2,
+    scoreMult: 1.5,
+  },
+};
+
 export const PALETTE = {
   cream: '#FFF4DF',
   parchment: '#F5E1BE',

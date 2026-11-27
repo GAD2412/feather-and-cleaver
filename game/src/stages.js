@@ -154,5 +154,36 @@ export function buildStageLayout(stageIndex, rng) {
     h: 164,
   };
 
-  return { def, covers, obstacles, exitGate };
+  // Decorative non-blocking autumn props (fallen leaves, pumpkins, kitchen floor rugs) for rich atmosphere.
+  const props = [];
+  const leafCount = def.floorStyle === 'tile' ? 14 : 38;
+  for (let i = 0; i < leafCount; i++) {
+    props.push({
+      kind: def.floorStyle === 'tile' ? 'herb' : 'leaf',
+      x: rng.range(70, def.length - 120),
+      y: rng.range(ARENA_TOP + 18, ARENA_BOTTOM - 18),
+      rot: rng.range(0, Math.PI * 2),
+      scale: rng.range(0.75, 1.3),
+      color: rng.pick(
+        def.floorStyle === 'tile'
+          ? ['#65A30D', '#F59E0B', '#DC2626']
+          : ['#EA580C', '#D97706', '#B91C1C', '#EAB308'],
+      ),
+    });
+  }
+  const borderPropCount = 8;
+  for (let i = 0; i < borderPropCount; i++) {
+    const px = 160 + ((def.length - 320) * i) / borderPropCount + rng.range(-25, 25);
+    const topEdge = i % 2 === 0;
+    props.push({
+      kind: def.floorStyle === 'tile' ? 'spice_rack' : 'pumpkin',
+      x: px,
+      y: topEdge ? ARENA_TOP + 12 : ARENA_BOTTOM - 12,
+      rot: 0,
+      scale: rng.range(0.85, 1.15),
+      color: '#EA580C',
+    });
+  }
+
+  return { def, covers, obstacles, exitGate, props };
 }

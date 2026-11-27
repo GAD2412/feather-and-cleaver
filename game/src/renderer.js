@@ -17,6 +17,7 @@ export class GameRenderer {
     ctx.save();
     ctx.translate(-cameraX, 0);
 
+    this._drawProps(ctx, stage.props ?? []);
     this._drawExitGate(ctx, stage.exitGate, def, timeSec);
     this._drawGreases(ctx, hazards.greases);
     this._drawObstacles(ctx, stage.obstacles);
@@ -26,7 +27,7 @@ export class GameRenderer {
     this._drawOvens(ctx, hazards.ovens, timeSec);
     this._drawSweepKnives(ctx, hazards.sweepKnives, timeSec);
     this._drawVisionCone(ctx, farmer, def);
-    this._drawTurkey(ctx, turkey, timeSec);
+    this._drawTurkey(ctx, turkey, timeSec, engine.turkeyQuipTimer > 0 ? engine.turkeyQuip : '');
     this._drawFarmer(ctx, farmer, timeSec);
     this._drawThrownKnives(ctx, hazards.thrownKnives);
     this._drawParticles(ctx, engine.particles);
@@ -34,8 +35,81 @@ export class GameRenderer {
 
     ctx.restore();
 
+    // Subtle warm edge vignette for atmospheric depth.
+    this._drawVignette(ctx);
     // Subtle aim reticle during active play.
     this._drawAimReticle(ctx, engine);
+    ctx.restore();
+  }
+
+  _drawProps(ctx, props) {
+    for (const p of props) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.scale(p.scale, p.scale);
+      if (p.kind === 'leaf') {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = 0.72;
+        ctx.beginPath();
+        ctx.moveTo(0, -6);
+        ctx.lineTo(5, -1);
+        ctx.lineTo(3, 5);
+        ctx.lineTo(0, 3);
+        ctx.lineTo(-3, 5);
+        ctx.lineTo(-5, -1);
+        ctx.closePath();
+        ctx.fill();
+      } else if (p.kind === 'herb') {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = 0.45;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 5, 2.5, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.kind === 'pumpkin') {
+        ctx.fillStyle = 'rgba(0,0,0,0.28)';
+        ctx.beginPath();
+        ctx.ellipse(2, 6, 13, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#EA580C';
+        ctx.beginPath();
+        ctx.ellipse(-4, 0, 8, 9, 0, 0, Math.PI * 2);
+        ctx.ellipse(4, 0, 8, 9, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#F97316';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 7, 9.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#3F6212';
+        ctx.fillRect(-2, -12, 4, 5);
+      } else if (p.kind === 'spice_rack') {
+        ctx.fillStyle = '#57534E';
+        ctx.fillRect(-14, -5, 28, 10);
+        ctx.fillStyle = '#DC2626';
+        ctx.fillRect(-11, -3, 6, 6);
+        ctx.fillStyle = '#FACC15';
+        ctx.fillRect(-3, -3, 6, 6);
+        ctx.fillStyle = '#65A30D';
+        ctx.fillRect(5, -3, 6, 6);
+      }
+      ctx.restore();
+    }
+  }
+
+  _drawVignette(ctx) {
+    ctx.save();
+    const grad = ctx.createRadialGradient(
+      VIEW_WIDTH * 0.5,
+      VIEW_HEIGHT * 0.5,
+      VIEW_HEIGHT * 0.36,
+      VIEW_WIDTH * 0.5,
+      VIEW_HEIGHT * 0.5,
+      VIEW_WIDTH * 0.62,
+    );
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(1, 'rgba(20, 8, 2, 0.28)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, ARENA_TOP, VIEW_WIDTH, ARENA_HEIGHT);
     ctx.restore();
   }
 
@@ -169,10 +243,28 @@ export class GameRenderer {
       ctx.fillRect(o.x + 5, o.y + 7, o.w, o.h);
 
       if (o.kind === 'island') {
-        ctx.fillStyle = '#B45309';
+        ctx.fillStyle = '#92400E';
         ctx.fillRect(o.x, o.y, o.w, o.h);
-        ctx.fillStyle = '#F5E6D3';
-        ctx.fillRect(o.x + 4, o.y + 4, o.w - 8, o.h - 12);
+        ctx.fillStyle = '#F7EFE5';
+        ctx.fillRect(o.x + 4, o.y + 4, o.w - 8, o.h - 10);
+        // Butcher-block cutting board + carrots & herbs.
+        ctx.fillStyle = '#D97706';
+        ctx.fillRect(o.x + 12, o.y + 8, 34, 18);
+        ctx.fillStyle = '#F97316';
+        ctx.fillRect(o.x + 18, o.y + 13, 14, 4);
+        ctx.fillStyle = '#65A30D';
+        ctx.beginPath();
+        ctx.arc(o.x + 36, o.y + 16, 4, 0, Math.PI * 2);
+        ctx.fill();
+        // Copper pot on right side of island.
+        ctx.fillStyle = '#B45309';
+        ctx.beginPath();
+        ctx.arc(o.x + o.w - 22, o.y + 17, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FDE68A';
+        ctx.beginPath();
+        ctx.arc(o.x + o.w - 22, o.y + 17, 5, 0, Math.PI * 2);
+        ctx.fill();
         ctx.strokeStyle = '#78350F';
         ctx.lineWidth = 2;
         ctx.strokeRect(o.x, o.y, o.w, o.h);
@@ -180,7 +272,14 @@ export class GameRenderer {
         ctx.fillStyle = '#6B3410';
         ctx.fillRect(o.x, o.y, o.w, o.h);
         ctx.fillStyle = '#92400E';
-        ctx.fillRect(o.x + 3, o.y + 3, o.w - 6, o.h - 10);
+        ctx.fillRect(o.x + 3, o.y + 4, o.w - 6, o.h - 12);
+        // Fence posts & iron nail rivets.
+        ctx.fillStyle = '#4A2511';
+        ctx.fillRect(o.x + 6, o.y - 3, 10, o.h + 4);
+        ctx.fillRect(o.x + o.w - 16, o.y - 3, 10, o.h + 4);
+        ctx.fillStyle = '#CBD5E1';
+        ctx.fillRect(o.x + 10, o.y + 8, 2.5, 2.5);
+        ctx.fillRect(o.x + o.w - 12, o.y + 8, 2.5, 2.5);
         ctx.strokeStyle = '#3B1B08';
         ctx.lineWidth = 2;
         ctx.strokeRect(o.x, o.y, o.w, o.h);
@@ -201,32 +300,61 @@ export class GameRenderer {
       ctx.fill();
 
       if (c.type === 'haystack') {
-        ctx.fillStyle = '#D97706';
+        ctx.fillStyle = '#CA8A04';
         ctx.beginPath();
         ctx.arc(0, 0, c.radius, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#FBBF24';
+        ctx.fillStyle = '#FACC15';
         ctx.beginPath();
-        ctx.arc(-4, -5, c.radius * 0.72, 0, Math.PI * 2);
+        ctx.arc(-3, -4, c.radius * 0.76, 0, Math.PI * 2);
         ctx.fill();
+        // Straw wisps & twine band.
         ctx.strokeStyle = '#92400E';
+        ctx.lineWidth = 2;
+        for (let s = 0; s < 6; s++) {
+          const a = (s * Math.PI) / 3;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * 14, Math.sin(a) * 14);
+          ctx.lineTo(Math.cos(a) * (c.radius + 3), Math.sin(a) * (c.radius + 3));
+          ctx.stroke();
+        }
+        ctx.strokeStyle = '#78350F';
         ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, c.radius, 0, Math.PI * 2);
         ctx.stroke();
       } else if (c.type === 'barrel') {
         ctx.fillStyle = '#7C2D12';
         ctx.beginPath();
         ctx.arc(0, 0, c.radius * 0.92, 0, Math.PI * 2);
         ctx.fill();
+        ctx.strokeStyle = '#451A03';
+        ctx.lineWidth = 1.5;
+        for (let k = -16; k <= 16; k += 8) {
+          ctx.beginPath();
+          ctx.moveTo(k, -c.radius * 0.8);
+          ctx.lineTo(k, c.radius * 0.8);
+          ctx.stroke();
+        }
         ctx.strokeStyle = '#94A3B8';
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.arc(0, 0, c.radius * 0.85, 0, Math.PI * 2);
         ctx.stroke();
       } else if (c.type === 'cabinet') {
-        ctx.fillStyle = '#57534E';
+        ctx.fillStyle = '#44403C';
         ctx.fillRect(-c.radius * 0.9, -c.radius * 0.78, c.radius * 1.8, c.radius * 1.56);
-        ctx.fillStyle = '#A8A29E';
+        ctx.fillStyle = '#D6D3D1';
         ctx.fillRect(-c.radius * 0.76, -c.radius * 0.64, c.radius * 1.52, c.radius * 1.28);
+        ctx.strokeStyle = '#78716C';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, -c.radius * 0.64);
+        ctx.lineTo(0, c.radius * 0.64);
+        ctx.stroke();
+        ctx.fillStyle = '#F59E0B';
+        ctx.fillRect(-5, -4, 3, 8);
+        ctx.fillRect(2, -4, 3, 8);
         ctx.strokeStyle = '#292524';
         ctx.lineWidth = 2.5;
         ctx.strokeRect(-c.radius * 0.9, -c.radius * 0.78, c.radius * 1.8, c.radius * 1.56);
@@ -404,7 +532,7 @@ export class GameRenderer {
       ctx.fillStyle = '#FFF4DF';
       ctx.font = 'bold 11px system-ui, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(oven.state === 'PREHEAT' ? 'OVEN HEAT!' : 'OVEN', 0, oven.dirY > 0 ? -hh - 5 : hh + 13);
+      ctx.fillText(oven.state === 'PREHEAT' ? 'OVEN 450°F!' : 'OVEN 450°F', 0, oven.dirY > 0 ? -hh - 5 : hh + 13);
       ctx.restore();
     }
   }
@@ -535,45 +663,65 @@ export class GameRenderer {
     ctx.restore();
   }
 
-  _drawTurkey(ctx, turkey, timeSec) {
+  _drawTurkey(ctx, turkey, timeSec, quip = '') {
     ctx.save();
     ctx.translate(turkey.x, turkey.y);
 
     if (turkey.invulnTimer > 0 && turkey.dashTimer <= 0 && Math.floor(timeSec * 16) % 2 === 0) {
       ctx.globalAlpha = 0.55;
     } else if (turkey.hiddenIn) {
-      ctx.globalAlpha = 0.72;
+      ctx.globalAlpha = 0.76;
     }
 
-    // Dash trail aura.
+    // Dash trail aura + speed lines.
     if (turkey.dashTimer > 0) {
-      ctx.fillStyle = 'rgba(251, 191, 36, 0.35)';
+      ctx.fillStyle = 'rgba(251, 191, 36, 0.34)';
       ctx.beginPath();
-      ctx.arc(0, 0, turkey.radius + 11, 0, Math.PI * 2);
+      ctx.arc(0, 0, turkey.radius + 13, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = 'rgba(254, 240, 138, 0.85)';
+      ctx.lineWidth = 2.5;
+      for (const oy of [-10, 0, 10]) {
+        ctx.beginPath();
+        ctx.moveTo(-22, oy);
+        ctx.lineTo(-42, oy);
+        ctx.stroke();
+      }
     }
 
     // Ground shadow.
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.34)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.36)';
     ctx.beginPath();
-    ctx.ellipse(2, 12, 17, 8, 0, 0, Math.PI * 2);
+    ctx.ellipse(2, 13, 18, 8.5, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.save();
     ctx.rotate(turkey.facing);
-    ctx.scale(turkey.squash * 1.18, (2 - turkey.squash) * 1.18);
+    ctx.scale(turkey.squash * 1.22, (2 - turkey.squash) * 1.22);
 
-    // Fanned Thanksgiving tail feathers (back).
-    const featherColors = ['#B91C1C', '#EA580C', '#F59E0B', '#D97706', '#991B1B'];
-    for (let i = -2; i <= 2; i++) {
+    // Scurrying orange feet.
+    const footStride = Math.sin(turkey.animPhase * 1.6) * 4;
+    ctx.fillStyle = '#F59E0B';
+    ctx.fillRect(-3 + footStride, -10, 6, 3);
+    ctx.fillRect(-3 - footStride, 7, 6, 3);
+
+    // 7-feather layered Thanksgiving tail fan with cream-and-gold tips.
+    const featherColors = ['#991B1B', '#DC2626', '#EA580C', '#F59E0B', '#EA580C', '#DC2626', '#991B1B'];
+    for (let i = -3; i <= 3; i++) {
       ctx.save();
-      ctx.rotate(i * 0.28 + Math.sin(turkey.animPhase) * 0.04);
-      ctx.fillStyle = featherColors[i + 2];
+      ctx.rotate(i * 0.22 + Math.sin(turkey.animPhase) * 0.04);
+      ctx.fillStyle = featherColors[i + 3];
       ctx.beginPath();
-      ctx.ellipse(-15, 0, 12, 4.8, 0, 0, Math.PI * 2);
+      ctx.ellipse(-16, 0, 13, 4.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#FEF3C7';
+      ctx.beginPath();
+      ctx.ellipse(-25, 0, 3.2, 2.4, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = '#451A03';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.ellipse(-16, 0, 13, 4.4, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
@@ -631,12 +779,26 @@ export class GameRenderer {
     ctx.restore();
 
     if (turkey.hiddenIn) {
-      ctx.fillStyle = 'rgba(22, 101, 52, 0.9)';
-      ctx.fillRect(-26, -34, 52, 17);
+      ctx.fillStyle = 'rgba(22, 101, 52, 0.92)';
+      ctx.beginPath();
+      ctx.roundRect(-28, -38, 56, 18, 5);
+      ctx.fill();
       ctx.fillStyle = '#ECFCCB';
       ctx.font = 'bold 10px system-ui, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('HIDDEN', 0, -22);
+      ctx.fillText('HIDDEN', 0, -25);
+    } else if (quip) {
+      ctx.fillStyle = '#FFFBEB';
+      ctx.beginPath();
+      ctx.roundRect(-34, -46, 68, 20, 8);
+      ctx.fill();
+      ctx.strokeStyle = '#78350F';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#9A3412';
+      ctx.font = '900 11px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(quip, 0, -32);
     }
     ctx.restore();
   }
