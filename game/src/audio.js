@@ -5,6 +5,8 @@ export class SoundEngine {
     this.muted = false;
     this.masterGain = null;
     this.stepTimer = 0;
+    this.musicTimer = 0;
+    this.musicStep = 0;
   }
 
   unlock() {
@@ -165,12 +167,23 @@ export class SoundEngine {
   tickFootstep(dt, moving, dangerRatio) {
     if (!moving) {
       this.stepTimer = 0.08;
-      return;
+    } else {
+      this.stepTimer -= dt;
+      if (this.stepTimer <= 0) {
+        this.stepTimer = dangerRatio > 0.6 ? 0.17 : 0.23;
+        this.playTone({ freq: 145 + Math.random() * 35, endFreq: 95, type: 'sine', duration: 0.045, gain: 0.05 });
+      }
     }
-    this.stepTimer -= dt;
-    if (this.stepTimer <= 0) {
-      this.stepTimer = dangerRatio > 0.6 ? 0.17 : 0.23;
-      this.playTone({ freq: 145 + Math.random() * 35, endFreq: 95, type: 'sine', duration: 0.045, gain: 0.05 });
+
+    // Subtle procedural autumn groove that quickens when the farmer is chasing.
+    this.musicTimer -= dt;
+    if (this.musicTimer <= 0) {
+      const tempo = dangerRatio > 0.7 ? 0.22 : 0.34;
+      this.musicTimer = tempo;
+      const scale = dangerRatio > 0.7 ? [196, 233.08, 261.63, 293.66] : [196, 220, 261.63, 329.63];
+      const freq = scale[this.musicStep % scale.length];
+      this.musicStep += 1;
+      this.playTone({ freq, endFreq: freq * 0.98, type: 'triangle', duration: 0.14, gain: 0.032 });
     }
   }
 }

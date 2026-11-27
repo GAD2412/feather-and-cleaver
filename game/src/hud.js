@@ -342,15 +342,18 @@ export class HudRenderer {
     ctx.fillStyle = '#5B6E29';
     ctx.fillRect(x, y + 165, w, h - 165);
 
-    // Mini Oven on right.
+    // Mini Oven on right with stovetop burners & roast glow.
     ctx.fillStyle = '#1F2937';
-    ctx.fillRect(x + 410, y + 120, 84, 70);
+    ctx.fillRect(x + 410, y + 116, 86, 76);
+    ctx.strokeStyle = '#9CA3AF';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 410, y + 116, 86, 76);
     ctx.fillStyle = '#F97316';
-    ctx.fillRect(x + 424, y + 136, 56, 36);
+    ctx.fillRect(x + 426, y + 136, 54, 38);
     ctx.fillStyle = '#FEF08A';
     ctx.font = 'bold 12px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('ROAST OVEN', x + 452, y + 110);
+    ctx.fillText('ROAST OVEN', x + 453, y + 104);
 
     // Gleaming carving knife hovering mid-air.
     ctx.save();
@@ -368,7 +371,7 @@ export class HudRenderer {
     ctx.fill();
     ctx.restore();
 
-    // Farmer on left with vision beam.
+    // Farmer on left with overalls, apron, fork & vision beam.
     ctx.fillStyle = 'rgba(220, 38, 38, 0.28)';
     ctx.beginPath();
     ctx.moveTo(x + 115, y + 180);
@@ -377,14 +380,38 @@ export class HudRenderer {
     ctx.closePath();
     ctx.fill();
 
+    ctx.strokeStyle = '#CBD5E1';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x + 120, y + 195);
+    ctx.lineTo(x + 158, y + 193);
+    ctx.stroke();
+
     ctx.fillStyle = '#B91C1C';
     ctx.beginPath();
-    ctx.arc(x + 110, y + 180, 26, 0, Math.PI * 2);
+    ctx.ellipse(x + 108, y + 180, 22, 26, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#1D4ED8';
+    ctx.fillRect(x + 96, y + 165, 20, 30);
+    ctx.fillStyle = '#FEF3C7';
+    ctx.beginPath();
+    ctx.ellipse(x + 118, y + 180, 12, 16, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#FACC15';
     ctx.beginPath();
-    ctx.arc(x + 110, y + 180, 18, 0, Math.PI * 2);
+    ctx.arc(x + 108, y + 180, 16, 0, Math.PI * 2);
     ctx.fill();
+    ctx.fillStyle = '#DC2626';
+    ctx.beginPath();
+    ctx.arc(x + 108, y + 180, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#FDE047';
+    ctx.beginPath();
+    ctx.arc(x + 108, y + 180, 7.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#FFF4DF';
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.fillText('FARMER', x + 108, y + 144);
 
     // Hero Turkey dashing center.
     const tx = x + 285;

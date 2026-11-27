@@ -381,9 +381,24 @@ export class GameRenderer {
       ctx.lineWidth = 2.5;
       ctx.strokeRect(-hw, -hh, oven.width, oven.height);
 
+      // 4 cast-iron stovetop burners + brass door handle.
+      ctx.fillStyle = '#111827';
+      ctx.strokeStyle = oven.state === 'IDLE' ? '#4B5563' : '#F97316';
+      ctx.lineWidth = 1.5;
+      for (const bx of [-hw + 14, hw - 14]) {
+        for (const by of [-hh + 9, hh - 9]) {
+          ctx.beginPath();
+          ctx.arc(bx, by, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+
       // Glowing oven window.
       ctx.fillStyle = oven.state === 'IDLE' ? '#7C2D12' : oven.state === 'PREHEAT' ? '#F97316' : '#FEF08A';
-      ctx.fillRect(-hw + 12, -hh + 10, oven.width - 24, oven.height - 20);
+      ctx.fillRect(-hw + 20, -hh + 11, oven.width - 40, oven.height - 22);
+      ctx.fillStyle = '#FBBF24';
+      ctx.fillRect(-hw + 16, oven.dirY > 0 ? hh - 4 : -hh + 1, oven.width - 32, 3);
 
       // Tag label for instant readability.
       ctx.fillStyle = '#FFF4DF';
@@ -642,36 +657,63 @@ export class GameRenderer {
 
     // Swinging arms & carving fork/pitchfork.
     const swing = Math.sin(farmer.walkPhase) * 3;
-    ctx.strokeStyle = '#9CA3AF';
+    // Stepping boots.
+    const step = Math.sin(farmer.walkPhase) * 5;
+    ctx.fillStyle = '#3B1E08';
+    ctx.beginPath();
+    ctx.ellipse(4 + step, -10, 7, 4.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(4 - step, 10, 7, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#CBD5E1';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(8, 15 + swing);
-    ctx.lineTo(35, 13 + swing);
+    ctx.lineTo(36, 13 + swing);
     ctx.stroke();
     // Fork prongs.
     ctx.beginPath();
-    ctx.moveTo(32, 8 + swing);
-    ctx.lineTo(39, 8 + swing);
-    ctx.moveTo(32, 13 + swing);
-    ctx.lineTo(40, 13 + swing);
-    ctx.moveTo(32, 18 + swing);
-    ctx.lineTo(39, 18 + swing);
+    ctx.moveTo(33, 8 + swing);
+    ctx.lineTo(41, 8 + swing);
+    ctx.moveTo(33, 13 + swing);
+    ctx.lineTo(42, 13 + swing);
+    ctx.moveTo(33, 18 + swing);
+    ctx.lineTo(41, 18 + swing);
     ctx.stroke();
 
-    // Flannel shoulders & apron torso.
+    // Flannel shoulders, denim overalls & white apron.
     ctx.fillStyle = '#B91C1C';
     ctx.beginPath();
-    ctx.ellipse(0, 0, 18, 22, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, 17, 22, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.fillStyle = '#1D4ED8';
+    ctx.fillRect(-10, -13, 16, 26);
     ctx.fillStyle = '#FEF3C7';
     ctx.beginPath();
-    ctx.ellipse(6, 0, 12, 14, 0, 0, Math.PI * 2);
+    ctx.ellipse(7, 0, 11, 13, 0, 0, Math.PI * 2);
     ctx.fill();
+
+    // Face & determined brow peeking ahead.
+    ctx.fillStyle = '#FDBA74';
+    ctx.beginPath();
+    ctx.arc(10, 0, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#111827';
+    ctx.beginPath();
+    ctx.arc(13, -3, 1.6, 0, Math.PI * 2);
+    ctx.arc(13, 3, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#78350F';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(15, -5);
+    ctx.lineTo(15, 5);
+    ctx.stroke();
 
     // Straw hat.
     ctx.fillStyle = '#FACC15';
     ctx.beginPath();
-    ctx.arc(0, 0, 15, 0, Math.PI * 2);
+    ctx.arc(-1, 0, 14, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#A16207';
     ctx.lineWidth = 2;
@@ -679,11 +721,11 @@ export class GameRenderer {
 
     ctx.fillStyle = '#DC2626';
     ctx.beginPath();
-    ctx.arc(0, 0, 9.5, 0, Math.PI * 2);
+    ctx.arc(-1, 0, 9, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#FDE047';
     ctx.beginPath();
-    ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
+    ctx.arc(-1, 0, 7, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
@@ -694,25 +736,25 @@ export class GameRenderer {
     const badgeColor = isChase ? '#DC2626' : isWarn ? '#EA580C' : '#3F6212';
     const label =
       farmer.calloutTimer > 0 && farmer.calloutText
-        ? farmer.calloutText
+        ? `FARMER: ${farmer.calloutText}`
         : farmer.state === FARMER_STATES.CORNERING
-          ? '!! CORNERING'
+          ? 'FARMER !! CORNER'
           : farmer.state === FARMER_STATES.CHASING
-            ? '! CHASING'
+            ? 'FARMER ! CHASING'
             : farmer.state === FARMER_STATES.SEARCHING
-              ? '? SEARCHING'
+              ? 'FARMER ? SEARCH'
               : farmer.state === FARMER_STATES.SUSPICIOUS
-                ? '? ALERT'
-                : 'PATROL';
+                ? 'FARMER ? ALERT'
+                : 'FARMER PATROL';
 
     ctx.fillStyle = badgeColor;
     ctx.beginPath();
-    ctx.roundRect(-48, -46, 96, 19, 6);
+    ctx.roundRect(-62, -50, 124, 20, 6);
     ctx.fill();
     ctx.fillStyle = '#FFFBEB';
     ctx.font = 'bold 11px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(label, 0, -33);
+    ctx.fillText(label, 0, -36);
 
     if (farmer.suspicion > 4 && farmer.suspicion < 100) {
       ctx.fillStyle = 'rgba(0,0,0,0.55)';

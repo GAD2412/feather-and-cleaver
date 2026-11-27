@@ -454,15 +454,18 @@ export class GameEngine {
       this.comboTimer = 3.2;
 
       const focusOven = this.hazards.ovens.find((o) => o.dirY > 0 && o.x > 650) ?? this.hazards.ovens[0];
-      const baseX = focusOven ? focusOven.x - 64 : 780;
+      const baseX = focusOven ? focusOven.x - 38 : 780;
       this.turkey.x = baseX;
       this.turkey.y = (ARENA_TOP + ARENA_BOTTOM) * 0.56;
-      this.turkey.dashTimer = 0.24;
+      this.turkey.dashTimer = 0.12;
       this.turkey.facing = 0.05;
 
-      this.farmer.x = baseX - 190;
-      this.farmer.y = this.turkey.y - 36;
+      this.farmer.x = baseX - 220;
+      this.farmer.y = this.turkey.y - 38;
       this.farmer._clampAndResolve(this.stage);
+      if (this.stage.obstacles.some((o) => Math.abs(this.farmer.x - (o.x + o.w * 0.5)) < o.w * 0.65 && Math.abs(this.farmer.y - (o.y + o.h * 0.5)) < o.h)) {
+        this.farmer.y = ARENA_TOP + 125;
+      }
       this.farmer.facing = Math.atan2(this.turkey.y - this.farmer.y, this.turkey.x - this.farmer.x);
       this.farmer.state = shot === 'kitchen' ? FARMER_STATES.CORNERING : FARMER_STATES.CHASING;
       this.farmer.suspicion = 100;
@@ -497,7 +500,7 @@ export class GameEngine {
       this.cameraX = clamp(this.turkey.x - VIEW_WIDTH * 0.42, 0, this.stage.def.length - VIEW_WIDTH);
       this.emitParticles(this.turkey.x - 26, this.turkey.y, 12, 'feather');
       this.popups = [];
-      this.addPopup('CLOSE CALL! +450', this.turkey.x + 14, this.turkey.y - 44, '#FBBF24', 1.5);
+      this.addPopup('CLOSE CALL! +450', this.turkey.x + 56, this.turkey.y - 42, '#FBBF24', 1.5);
       this.state = GAME_STATES.PLAYING;
       return;
     }
