@@ -8,13 +8,26 @@ export class GadgetManager {
     this.clouds = [];
   }
 
-  populateForStage(stage, rng) {
+  populateForStage(stage, ovens, rng) {
     this.sacks = [];
     this.clouds = [];
     const count = 2 + Math.min(3, stage.def.index);
     for (let i = 0; i < count; i++) {
-      const sx = 380 + ((stage.def.length - 680) * (i + 0.5)) / count + rng.range(-30, 30);
-      const sy = i % 2 === 0 ? ARENA_TOP + 125 : ARENA_BOTTOM - 125;
+      let sx = 410 + ((stage.def.length - 740) * (i + 0.5)) / count + rng.range(-25, 25);
+      let sy = i % 2 === 0 ? ARENA_TOP + 155 : ARENA_BOTTOM - 145;
+
+      // Never spawn a flour sack inside an oven blast corridor or obstacle!
+      for (const oven of ovens ?? []) {
+        if (Math.abs(sx - oven.x) < oven.blastHalfWidth + 46) {
+          sx += oven.x <= sx ? 92 : -92;
+        }
+      }
+      for (const rect of stage.obstacles) {
+        if (sx >= rect.x - 28 && sx <= rect.x + rect.w + 28 && sy >= rect.y - 28 && sy <= rect.y + rect.h + 28) {
+          sy = sy < (ARENA_TOP + ARENA_BOTTOM) * 0.5 ? ARENA_TOP + 125 : ARENA_BOTTOM - 125;
+        }
+      }
+
       this.sacks.push({
         id: i,
         x: sx,

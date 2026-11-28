@@ -14,6 +14,10 @@ export class HudRenderer {
     this._drawTopHud(ctx, engine);
     this._drawBottomBar(ctx, engine);
 
+    if (engine.state === GAME_STATES.PLAYING && engine.stageIndex === 3) {
+      this._drawKitchenBossBanner(ctx);
+    }
+
     if (engine.state === GAME_STATES.PERK_SELECT) {
       this._drawPerkSelect(ctx, engine);
     } else if (engine.state === GAME_STATES.PAUSED) {
@@ -199,6 +203,22 @@ export class HudRenderer {
       },
     });
 
+    ctx.restore();
+  }
+
+  _drawKitchenBossBanner(ctx) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(127, 29, 29, 0.88)';
+    ctx.beginPath();
+    ctx.roundRect(435, HUD_TOP_HEIGHT + 8, 410, 24, 12);
+    ctx.fill();
+    ctx.strokeStyle = '#FBBF24';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#FEF08A';
+    ctx.font = '800 11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText("CHEF SILAS'S ROAST RAMPAGE  •  TWIN 450°F OVENS & CLEAVERS", 640, HUD_TOP_HEIGHT + 24);
     ctx.restore();
   }
 
@@ -829,18 +849,24 @@ export class HudRenderer {
       ctx.fillText(val, bx + 117, by + 58);
     });
 
-    // Feats badge line.
+    // Perks Collected + Feats Earned summary lines.
+    const ownedPerks = engine.perks.getOwnedPerks();
+    if (ownedPerks.length > 0) {
+      ctx.fillStyle = '#FB923C';
+      ctx.font = '700 14px system-ui, sans-serif';
+      ctx.fillText(`PERKS USED: ${ownedPerks.map((p) => p.name).join('  •  ')}`, 640, 452);
+    }
     const feats = engine.getFeats().join('  •  ');
     ctx.fillStyle = '#FDE68A';
-    ctx.font = '700 16px system-ui, sans-serif';
-    ctx.fillText(`FEATS EARNED: ${feats}`, 640, 468);
+    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.fillText(`FEATS EARNED: ${feats}`, 640, 478);
 
     this._drawButton(ctx, engine, {
       id: 'btn-restart',
       x: 440,
-      y: 506,
+      y: 508,
       w: 400,
-      h: 74,
+      h: 72,
       label: 'PLAY AGAIN',
       sublabel: 'Click or Press R / Enter to Restart',
       bg: escaped ? '#65A30D' : '#EA580C',

@@ -61,18 +61,28 @@ export function drawStageBackdrop(ctx, def, cameraX, timeSec) {
     }
   }
 
-  // 2. Winding dirt escape path (outdoor stages) or woven kitchen runner rug (Kitchen).
+  // 2. Winding dirt escape path with stepping stones (outdoor stages) or woven kitchen runner + warm pendant lamps (Kitchen).
   ctx.save();
   if (def.floorStyle === 'tile') {
     const rugY = ARENA_TOP + ARENA_HEIGHT * 0.48;
-    ctx.fillStyle = 'rgba(153, 27, 27, 0.22)';
-    ctx.fillRect(0, rugY - 36, VIEW_WIDTH, 72);
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
+    ctx.fillStyle = 'rgba(153, 27, 27, 0.20)';
+    ctx.fillRect(0, rugY - 38, VIEW_WIDTH, 76);
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.42)';
     ctx.lineWidth = 3;
-    ctx.strokeRect(-4, rugY - 30, VIEW_WIDTH + 8, 60);
+    ctx.strokeRect(-4, rugY - 31, VIEW_WIDTH + 8, 62);
+    // Warm overhead pendant-lamp light pools across the kitchen floor.
+    for (let lx = 220; lx < VIEW_WIDTH; lx += 420) {
+      const pool = ctx.createRadialGradient(lx, rugY, 16, lx, rugY, 190);
+      pool.addColorStop(0, 'rgba(254, 243, 199, 0.22)');
+      pool.addColorStop(1, 'rgba(254, 243, 199, 0)');
+      ctx.fillStyle = pool;
+      ctx.beginPath();
+      ctx.arc(lx, rugY, 190, 0, Math.PI * 2);
+      ctx.fill();
+    }
   } else {
-    ctx.strokeStyle = def.floorStyle === 'woods' ? 'rgba(120, 82, 46, 0.42)' : 'rgba(161, 108, 52, 0.48)';
-    ctx.lineWidth = 86;
+    ctx.strokeStyle = def.floorStyle === 'woods' ? 'rgba(120, 82, 46, 0.46)' : 'rgba(168, 114, 56, 0.56)';
+    ctx.lineWidth = 92;
     ctx.lineCap = 'round';
     ctx.beginPath();
     for (let sx = -60; sx <= VIEW_WIDTH + 80; sx += 80) {
@@ -82,6 +92,19 @@ export function drawStageBackdrop(ctx, def, cameraX, timeSec) {
       else ctx.lineTo(sx, py);
     }
     ctx.stroke();
+
+    // Cobblestone stepping stones along the winding escape path.
+    const step = 110;
+    const firstStone = Math.floor(cameraX / step) - 1;
+    for (let s = firstStone; s < firstStone + Math.ceil(VIEW_WIDTH / step) + 3; s++) {
+      const wx = s * step + 40;
+      const sx = wx - cameraX;
+      const sy = ARENA_TOP + ARENA_HEIGHT * 0.55 + Math.sin(wx * 0.0042) * 58 + (s % 2 === 0 ? -12 : 12);
+      ctx.fillStyle = 'rgba(214, 192, 160, 0.42)';
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, 18, 9, (s % 3 - 1) * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
   ctx.restore();
 

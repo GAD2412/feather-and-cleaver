@@ -102,7 +102,7 @@ export class GameEngine {
     this.farmer.configureForStage(this.stage.def, this.turkey.x, this.rng);
     this.hound.configureForStage(this.stage.def, this.rng);
     this.hazards.populateForStage(this.stage, this.rng);
-    this.gadgets.populateForStage(this.stage, this.rng);
+    this.gadgets.populateForStage(this.stage, this.hazards.ovens, this.rng);
     this.decoys = [];
     this.cameraX = 0;
     this.turkeyQuip = '';
@@ -142,7 +142,13 @@ export class GameEngine {
   }
 
   addPopup(text, x, y, color = '#FFF4DF', duration = 1.1) {
-    this.popups.push({ text, x, y, vy: -38, color, life: duration, maxLife: duration });
+    let py = y;
+    for (const existing of this.popups) {
+      if (Math.abs(existing.x - x) < 120 && Math.abs(existing.y - py) < 28) {
+        py -= 30;
+      }
+    }
+    this.popups.push({ text, x, y: py, vy: -34, color, life: duration, maxLife: duration });
   }
 
   triggerShake(intensity, duration = 0.22) {
@@ -526,11 +532,14 @@ export class GameEngine {
       this.farmer.setCallout(shot === 'kitchen' ? 'CORNERED!' : '! CHASING !', 1.5);
 
       for (const oven of this.hazards.ovens) {
+        oven.grazedThisCycle = true;
         if (oven === focusOven || (shot === 'kitchen' && Math.abs(oven.x - baseX) < 760)) {
           oven.state = 'BLAST';
           oven.phase = oven.cycleDuration * 0.745;
-          oven.grazedThisCycle = true;
         }
+      }
+      for (const k of this.hazards.sweepKnives) {
+        k.grazedThisSlice = true;
       }
       const focusKnife = this.hazards.sweepKnives[1] ?? this.hazards.sweepKnives[0];
       if (focusKnife) {
@@ -538,7 +547,6 @@ export class GameEngine {
         focusKnife.state = 'SLICE';
         focusKnife.timer = focusKnife.period * 0.76;
         focusKnife.bladePos = this.turkey.y - 36;
-        focusKnife.grazedThisSlice = true;
       }
       this.hazards.thrownKnives.push({
         x: baseX + 340,
@@ -562,12 +570,12 @@ export class GameEngine {
       this.hound.setCallout('WOOF!', 1.5);
       // Place an active corn decoy on the right to showcase stealth distraction mechanics.
       this.decoys.push({
-        x: baseX + 355,
-        y: this.turkey.y - 68,
+        x: baseX + 365,
+        y: this.turkey.y - 72,
         startX: baseX,
         startY: this.turkey.y,
-        destX: baseX + 355,
-        destY: this.turkey.y - 68,
+        destX: baseX + 365,
+        destY: this.turkey.y - 72,
         flight: 0.24,
         flightDuration: 0.24,
         active: true,
@@ -578,7 +586,7 @@ export class GameEngine {
       });
       this.emitParticles(this.turkey.x - 28, this.turkey.y, 14, 'feather');
       this.popups = [];
-      this.addPopup('CLOSE CALL! +450', this.turkey.x + 88, this.turkey.y - 54, '#FBBF24', 1.5);
+      this.addPopup('CLOSE CALL! +450', this.turkey.x + 118, this.turkey.y - 88, '#FBBF24', 1.5);
       this.setTurkeyQuip(shot === 'kitchen' ? 'TOO HOT!' : 'YIKES!', 1.5);
       this.state = GAME_STATES.PLAYING;
       return;
@@ -595,6 +603,7 @@ export class GameEngine {
 
     if (shot === 'escaped' || shot === 'caught') {
       this.setupStage(shot === 'escaped' ? 4 : 3, true);
+      this.perks.ownedIds = ['greased_feathers', 'corn_bait_master', 'double_flap'];
       this.score = shot === 'escaped' ? 4620 : 2180;
       this.bestScore = this.score;
       this.totalDistance = shot === 'escaped' ? 680 : 410;
