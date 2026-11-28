@@ -529,6 +529,8 @@ export class GameEngine {
       this.farmer.facing = Math.atan2(this.turkey.y - this.farmer.y, this.turkey.x - this.farmer.x);
       this.farmer.state = shot === 'kitchen' ? FARMER_STATES.CORNERING : FARMER_STATES.CHASING;
       this.farmer.suspicion = 100;
+      this.farmer.spottedTimer = 1.7;
+      this.farmer.spottedLabel = shot === 'kitchen' ? 'CORNERED!' : 'SPOTTED!';
       this.farmer.setCallout(shot === 'kitchen' ? 'CORNERED!' : '! CHASING !', 1.5);
 
       for (const oven of this.hazards.ovens) {

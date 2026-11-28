@@ -22,6 +22,8 @@ export class FarmerAI {
     this.lungeDirY = 0;
     this.calloutText = '';
     this.calloutTimer = 0;
+    this.spottedTimer = 0;
+    this.spottedLabel = 'SPOTTED!';
     this.walkPhase = 0;
     this.activeDecoy = null;
     this.stunTimer = 0;
@@ -39,6 +41,8 @@ export class FarmerAI {
     this.lungeTimer = 0;
     this.calloutText = '';
     this.calloutTimer = 0;
+    this.spottedTimer = 0;
+    this.spottedLabel = 'SPOTTED!';
     this.stunTimer = 0;
     this.isChef = stageDef.index >= 3;
 
@@ -98,6 +102,7 @@ export class FarmerAI {
 
   update(dt, turkey, stage, decoys, perks, sound, onScoreDecoyLure) {
     if (this.calloutTimer > 0) this.calloutTimer = Math.max(0, this.calloutTimer - dt);
+    if (this.spottedTimer > 0) this.spottedTimer = Math.max(0, this.spottedTimer - dt);
     if (this.lungeCooldown > 0) this.lungeCooldown = Math.max(0, this.lungeCooldown - dt);
     if (this.stunTimer > 0) {
       this.stunTimer = Math.max(0, this.stunTimer - dt);
@@ -127,11 +132,17 @@ export class FarmerAI {
       if (this.suspicion >= 100) {
         if (this.isTurkeyCornered(turkey, stage)) {
           this.state = FARMER_STATES.CORNERING;
-          if (prevState !== FARMER_STATES.CORNERING) this.setCallout('CORNERED!', 1.2);
+          if (prevState !== FARMER_STATES.CORNERING) {
+            this.setCallout('CORNERED!', 1.2);
+            this.spottedTimer = 1.1;
+            this.spottedLabel = 'CORNERED!';
+          }
         } else {
           this.state = FARMER_STATES.CHASING;
           if (prevState !== FARMER_STATES.CHASING && prevState !== FARMER_STATES.CORNERING) {
             this.setCallout('! DINNER TIME !', 1.3);
+            this.spottedTimer = 1.1;
+            this.spottedLabel = 'SPOTTED!';
             sound?.playAlert(false);
           }
         }

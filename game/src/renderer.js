@@ -59,7 +59,7 @@ export class GameRenderer {
     drawables.sort((a, b) => a.y - b.y);
     for (const item of drawables) item.draw();
 
-    this._drawSweepKnifeBlades(ctx, hazards.sweepKnives);
+    this._drawSweepKnifeBlades(ctx, hazards.sweepKnives, turkey);
     this._drawThrownKnives(ctx, hazards.thrownKnives);
     for (const cloud of engine.gadgets?.clouds ?? []) {
       drawFlourCloud(ctx, cloud);
@@ -488,13 +488,34 @@ export class GameRenderer {
     }
   }
 
-  _drawSweepKnifeBlades(ctx, knives) {
+  _drawSweepKnifeBlades(ctx, knives, turkey) {
     for (const k of knives) {
       if (k.state !== 'SLICE') continue;
       const bx = k.horizontal ? k.bladePos : k.x;
       const by = k.horizontal ? k.y : k.bladePos;
       drawBladeSprite(ctx, bx, by, k.spin, 1.38, k.id % 2 === 1);
+      if (!turkey || Math.hypot(bx - turkey.x, by - turkey.y) > 120) {
+        this._drawHazardTag(ctx, k.id % 2 === 1 ? 'CLEAVER' : 'CARVING KNIFE', bx + 30, by + 34);
+      }
     }
+  }
+
+  _drawHazardTag(ctx, text, x, y) {
+    ctx.save();
+    ctx.font = '800 11px system-ui, sans-serif';
+    const w = ctx.measureText(text).width + 14;
+    ctx.fillStyle = 'rgba(69, 10, 10, 0.86)';
+    ctx.beginPath();
+    ctx.roundRect(x - w * 0.5, y - 9, w, 18, 5);
+    ctx.fill();
+    ctx.strokeStyle = '#FCA5A5';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#FEF2F2';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, y + 0.5);
+    ctx.restore();
   }
 
   _drawThrownKnives(ctx, knives) {

@@ -17,6 +17,10 @@ export class HudRenderer {
     if (engine.state === GAME_STATES.PLAYING && engine.stageIndex === 3) {
       this._drawKitchenBossBanner(ctx);
     }
+    if (engine.state === GAME_STATES.PLAYING || engine.state === GAME_STATES.PAUSED) {
+      this._drawChaseMeter(ctx, engine);
+      if (engine.farmer.spottedTimer > 0) this._drawSpottedStamp(ctx, engine);
+    }
 
     if (engine.state === GAME_STATES.PERK_SELECT) {
       this._drawPerkSelect(ctx, engine);
@@ -203,6 +207,62 @@ export class HudRenderer {
       },
     });
 
+    ctx.restore();
+  }
+
+  /** Live pursuit gauge: how many metres separate Barnaby from the Farmer, coloured by danger. */
+  _drawChaseMeter(ctx, engine) {
+    const { farmer, turkey } = engine;
+    const meters = Math.max(0, Math.hypot(farmer.x - turkey.x, farmer.y - turkey.y) * 0.05);
+    const danger = 1 - Math.min(1, meters / 30);
+    const x = 14;
+    const y = HUD_TOP_HEIGHT + 10;
+    ctx.save();
+    ctx.fillStyle = 'rgba(36, 17, 8, 0.86)';
+    ctx.beginPath();
+    ctx.roundRect(x, y, 196, 38, 9);
+    ctx.fill();
+    ctx.strokeStyle = danger > 0.6 ? '#F87171' : '#D97706';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#FDE68A';
+    ctx.font = '800 11px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(`FARMER ${meters.toFixed(1)}m BEHIND`, x + 10, y + 15);
+    ctx.fillStyle = '#451A03';
+    ctx.beginPath();
+    ctx.roundRect(x + 10, y + 22, 176, 8, 4);
+    ctx.fill();
+    ctx.fillStyle = danger > 0.6 ? '#EF4444' : danger > 0.3 ? '#F59E0B' : '#65A30D';
+    ctx.beginPath();
+    ctx.roundRect(x + 10, y + 22, Math.max(8, 176 * danger), 8, 4);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /** Comic stamp that slams in when the Farmer first spots or corners the turkey. */
+  _drawSpottedStamp(ctx, engine) {
+    const t = engine.farmer.spottedTimer;
+    const text = engine.farmer.spottedLabel || 'SPOTTED!';
+    const pop = 1 + Math.max(0, t - 0.9) * 2.2;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, t / 0.25);
+    ctx.translate(640, HUD_TOP_HEIGHT + 84);
+    ctx.rotate(-0.05);
+    ctx.scale(pop, pop);
+    ctx.font = '900 46px Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 9;
+    ctx.strokeStyle = '#3B0A0A';
+    ctx.strokeText(text, 0, 0);
+    ctx.fillStyle = '#EF4444';
+    ctx.fillText(text, 0, 0);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#FEF3C7';
+    ctx.strokeText(text, 0, 0);
     ctx.restore();
   }
 
