@@ -230,21 +230,52 @@ export class HudRenderer {
 
   _drawTitleScreen(ctx, engine, timeSec) {
     ctx.save();
-    // Warm Thanksgiving harvest backdrop.
+    // Full-bleed illustrated Thanksgiving harvest sunset backdrop.
     const grad = ctx.createLinearGradient(0, 0, 0, VIEW_HEIGHT);
-    grad.addColorStop(0, '#451A0A');
-    grad.addColorStop(0.55, '#7C2D12');
-    grad.addColorStop(1, '#291208');
+    grad.addColorStop(0, '#2B0F06');
+    grad.addColorStop(0.42, '#7C2D12');
+    grad.addColorStop(0.74, '#C2410C');
+    grad.addColorStop(1, '#1E0D06');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
 
-    // Decorative autumn harvest moon & hills.
-    ctx.fillStyle = 'rgba(251, 191, 36, 0.16)';
+    // Glowing harvest moon + distant autumn rolling hills & barn silhouette.
+    ctx.fillStyle = 'rgba(254, 240, 138, 0.24)';
     ctx.beginPath();
-    ctx.arc(970, 175, 115, 0, Math.PI * 2);
+    ctx.arc(1060, 135, 130, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(254, 249, 195, 0.45)';
+    ctx.beginPath();
+    ctx.arc(1060, 135, 76, 0, Math.PI * 2);
     ctx.fill();
 
-    // Title emblem card.
+    ctx.fillStyle = 'rgba(41, 18, 8, 0.55)';
+    ctx.beginPath();
+    ctx.moveTo(0, VIEW_HEIGHT);
+    ctx.lineTo(0, 520);
+    ctx.quadraticCurveTo(320, 440, 640, 515);
+    ctx.quadraticCurveTo(960, 580, VIEW_WIDTH, 470);
+    ctx.lineTo(VIEW_WIDTH, VIEW_HEIGHT);
+    ctx.closePath();
+    ctx.fill();
+
+    // Floating decorative autumn maple leaves in the background.
+    const leafColors = ['#F59E0B', '#EA580C', '#DC2626', '#FACC15'];
+    for (let i = 0; i < 16; i++) {
+      const lx = ((i * 97 + timeSec * 18) % (VIEW_WIDTH + 60)) - 30;
+      const ly = ((i * 73 + Math.sin(timeSec * 1.4 + i) * 24) % VIEW_HEIGHT);
+      ctx.save();
+      ctx.translate(lx, ly);
+      ctx.rotate(timeSec * 0.6 + i);
+      ctx.fillStyle = leafColors[i % leafColors.length];
+      ctx.globalAlpha = 0.35;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 9, 4.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Carved-wood main glassmorphic card.
     ctx.fillStyle = 'rgba(24, 11, 5, 0.84)';
     ctx.beginPath();
     ctx.roundRect(64, 52, 1152, 616, 22);

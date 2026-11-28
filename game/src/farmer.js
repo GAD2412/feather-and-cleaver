@@ -24,6 +24,8 @@ export class FarmerAI {
     this.calloutTimer = 0;
     this.walkPhase = 0;
     this.activeDecoy = null;
+    this.stunTimer = 0;
+    this.isChef = false;
   }
 
   configureForStage(stageDef, turkeyStartX, rng) {
@@ -37,6 +39,8 @@ export class FarmerAI {
     this.lungeTimer = 0;
     this.calloutText = '';
     this.calloutTimer = 0;
+    this.stunTimer = 0;
+    this.isChef = stageDef.index >= 3;
 
     const midY = (ARENA_TOP + ARENA_BOTTOM) * 0.5;
     this.waypoints = [
@@ -55,6 +59,14 @@ export class FarmerAI {
   setCallout(text, duration = 1.4) {
     this.calloutText = text;
     this.calloutTimer = duration;
+  }
+
+  stun(duration = 2.2) {
+    this.stunTimer = Math.max(this.stunTimer, duration);
+    this.lungeWindup = 0;
+    this.lungeTimer = 0;
+    this.suspicion = Math.min(this.suspicion, 35);
+    this.setCallout('ACHOO! BLINDED!', duration);
   }
 
   canSeeTurkey(turkey, stage, perks) {
@@ -87,6 +99,10 @@ export class FarmerAI {
   update(dt, turkey, stage, decoys, perks, sound, onScoreDecoyLure) {
     if (this.calloutTimer > 0) this.calloutTimer = Math.max(0, this.calloutTimer - dt);
     if (this.lungeCooldown > 0) this.lungeCooldown = Math.max(0, this.lungeCooldown - dt);
+    if (this.stunTimer > 0) {
+      this.stunTimer = Math.max(0, this.stunTimer - dt);
+      return;
+    }
 
     // Check active decoys nearby.
     let heardDecoy = null;

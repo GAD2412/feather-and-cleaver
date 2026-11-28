@@ -1,6 +1,6 @@
 import { FARMER_STATES, VIEW_HEIGHT, VIEW_WIDTH } from './constants.js';
 import { drawArenaVignette, drawStageBackdrop, drawStageProps } from './environment.js';
-import { drawBladeSprite, drawFarmerSprite, drawHoundSprite, drawTurkeySprite } from './sprites.js';
+import { drawBladeSprite, drawFarmerSprite, drawFlourCloud, drawFlourSackSprite, drawHoundSprite, drawTurkeySprite } from './sprites.js';
 
 /** 2.5D Y-sorted Canvas renderer orchestrating environment, hazards, sprites, and FX. */
 export class GameRenderer {
@@ -39,6 +39,9 @@ export class GameRenderer {
     for (const oven of hazards.ovens) {
       drawables.push({ y: oven.y + 16, draw: () => this._drawOvenBody(ctx, oven, timeSec) });
     }
+    for (const sack of engine.gadgets?.sacks ?? []) {
+      drawables.push({ y: sack.y + 10, draw: () => drawFlourSackSprite(ctx, sack) });
+    }
     drawables.push({
       y: turkey.y + 14,
       draw: () => drawTurkeySprite(ctx, turkey, timeSec, engine.turkeyQuipTimer > 0 ? engine.turkeyQuip : ''),
@@ -58,6 +61,9 @@ export class GameRenderer {
 
     this._drawSweepKnifeBlades(ctx, hazards.sweepKnives);
     this._drawThrownKnives(ctx, hazards.thrownKnives);
+    for (const cloud of engine.gadgets?.clouds ?? []) {
+      drawFlourCloud(ctx, cloud);
+    }
     this._drawParticles(ctx, engine.particles);
     this._drawPopups(ctx, engine.popups);
 

@@ -264,45 +264,61 @@ export function drawFarmerSprite(ctx, farmer, timeSec, scaleMult = 1.38) {
   ctx.ellipse(5, -20, 6.5, 2.8, 0.1, 0, Math.PI * 2);
   ctx.fill();
 
-  // Tall woven straw hat + red band.
-  ctx.fillStyle = '#FACC15';
-  ctx.beginPath();
-  ctx.ellipse(0, -32, 20, 6, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#A16207';
-  ctx.lineWidth = 1.8;
-  ctx.stroke();
-  ctx.fillStyle = '#EAB308';
-  ctx.beginPath();
-  ctx.roundRect(-11, -43, 22, 12, 5);
-  ctx.fill();
-  ctx.fillStyle = '#DC2626';
-  ctx.fillRect(-11, -35, 22, 3.5);
+  // Tall woven straw hat (Farmyard/Barn/Porch) OR pleated white Chef Toque (Kitchen!).
+  if (farmer.isChef) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.roundRect(-12, -40, 24, 10, 3);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(-8, -42, 7.5, 0, Math.PI * 2);
+    ctx.arc(0, -45, 9, 0, Math.PI * 2);
+    ctx.arc(8, -42, 7.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#94A3B8';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-12, -36, 24, 5);
+  } else {
+    ctx.fillStyle = '#FACC15';
+    ctx.beginPath();
+    ctx.ellipse(0, -32, 20, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#A16207';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+    ctx.fillStyle = '#EAB308';
+    ctx.beginPath();
+    ctx.roundRect(-11, -43, 22, 12, 5);
+    ctx.fill();
+    ctx.fillStyle = '#DC2626';
+    ctx.fillRect(-11, -35, 22, 3.5);
+  }
 
   ctx.restore();
 
-  const badgeColor = isChase ? '#DC2626' : isWarn ? '#EA580C' : '#3F6212';
+  const rolePrefix = farmer.isChef ? 'CHEF SILAS' : 'FARMER';
+  const badgeColor = farmer.stunTimer > 0 ? '#64748B' : isChase ? '#DC2626' : isWarn ? '#EA580C' : '#3F6212';
   const label =
     farmer.calloutTimer > 0 && farmer.calloutText
-      ? `FARMER: ${farmer.calloutText}`
+      ? `${rolePrefix}: ${farmer.calloutText}`
       : farmer.state === FARMER_STATES.CORNERING
-        ? 'FARMER !! CORNER'
+        ? `${rolePrefix} !! CORNER`
         : farmer.state === FARMER_STATES.CHASING
-          ? 'FARMER ! CHASING'
+          ? `${rolePrefix} ! CHASING`
           : farmer.state === FARMER_STATES.SEARCHING
-            ? 'FARMER ? SEARCH'
+            ? `${rolePrefix} ? SEARCH`
             : farmer.state === FARMER_STATES.SUSPICIOUS
-              ? 'FARMER ? ALERT'
-              : 'FARMER PATROL';
+              ? `${rolePrefix} ? ALERT`
+              : `${rolePrefix} PATROL`;
 
   ctx.fillStyle = badgeColor;
   ctx.beginPath();
-  ctx.roundRect(-68, -86, 136, 22, 6);
+  ctx.roundRect(-78, -88, 156, 22, 6);
   ctx.fill();
   ctx.fillStyle = '#FFFBEB';
   ctx.font = 'bold 12px system-ui, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(label, 0, -71);
+  ctx.fillText(label, 0, -73);
 
   if (farmer.suspicion > 4 && farmer.suspicion < 100) {
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
@@ -448,5 +464,58 @@ export function drawBladeSprite(ctx, x, y, angle, scale = 1.35, isCleaver = fals
   ctx.moveTo(-6, isCleaver ? -6.5 : -3.5);
   ctx.lineTo(22, isCleaver ? -7 : -1);
   ctx.stroke();
+  ctx.restore();
+}
+
+/** Tied burlap Flour Sack trap (dash past to burst blinding flour cloud). */
+export function drawFlourSackSprite(ctx, sack) {
+  if (sack.triggered) return;
+  ctx.save();
+  ctx.translate(sack.x, sack.y);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(2, 12, 18, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#EFE3CE';
+  ctx.beginPath();
+  ctx.ellipse(0, 2, 17, 15, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#8C6239';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Tied sack neck.
+  ctx.fillStyle = '#D6C2A3';
+  ctx.beginPath();
+  ctx.moveTo(-8, -11);
+  ctx.lineTo(8, -11);
+  ctx.lineTo(5, -18);
+  ctx.lineTo(-5, -18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#B91C1C';
+  ctx.fillRect(-7, -12, 14, 3);
+
+  ctx.fillStyle = '#78350F';
+  ctx.font = '800 8px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('FLOUR', 0, 5);
+  ctx.restore();
+}
+
+/** Expanding creamy-white flour dust cloud that blinds the Farmer. */
+export function drawFlourCloud(ctx, cloud) {
+  ctx.save();
+  const alpha = Math.min(0.82, (cloud.life / cloud.maxLife) * 1.1);
+  ctx.globalAlpha = alpha;
+  const grad = ctx.createRadialGradient(cloud.x, cloud.y, 12, cloud.x, cloud.y, cloud.radius);
+  grad.addColorStop(0, 'rgba(255, 251, 235, 0.95)');
+  grad.addColorStop(0.65, 'rgba(245, 235, 215, 0.72)');
+  grad.addColorStop(1, 'rgba(245, 235, 215, 0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }

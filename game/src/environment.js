@@ -42,11 +42,20 @@ export function drawStageBackdrop(ctx, def, cameraX, timeSec) {
         ctx.lineTo(screenX + tileSize, screenY);
         ctx.stroke();
       } else {
-        if ((col * 3 + row * 5) % 4 === 0) {
-          ctx.fillStyle = def.bgSecondary;
+        // Painterly grass blade tufts instead of flat oval blobs.
+        if ((col * 3 + row * 5) % 3 === 0) {
+          ctx.strokeStyle = def.bgSecondary;
+          ctx.lineWidth = 2;
+          const gx = screenX + 26;
+          const gy = screenY + 34;
           ctx.beginPath();
-          ctx.ellipse(screenX + 32, screenY + 32, 26, 13, 0.18, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.moveTo(gx, gy);
+          ctx.lineTo(gx - 5, gy - 9);
+          ctx.moveTo(gx + 4, gy);
+          ctx.lineTo(gx + 3, gy - 11);
+          ctx.moveTo(gx + 8, gy);
+          ctx.lineTo(gx + 13, gy - 8);
+          ctx.stroke();
         }
       }
     }

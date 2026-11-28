@@ -10,6 +10,7 @@ import {
 } from './constants.js';
 import { FarmerAI } from './farmer.js';
 import { evaluateRunFeats } from './feats.js';
+import { GadgetManager } from './gadgets.js';
 import { clamp, distance } from './geometry.js';
 import { HazardManager } from './hazards.js';
 import { HOUND_STATES, ScentHoundAI } from './hound.js';
@@ -27,6 +28,7 @@ export class GameEngine {
     this.farmer = new FarmerAI();
     this.hound = new ScentHoundAI();
     this.hazards = new HazardManager();
+    this.gadgets = new GadgetManager();
     this.perks = new PerkSystem();
 
     this.state = GAME_STATES.TITLE;
@@ -100,6 +102,7 @@ export class GameEngine {
     this.farmer.configureForStage(this.stage.def, this.turkey.x, this.rng);
     this.hound.configureForStage(this.stage.def, this.rng);
     this.hazards.populateForStage(this.stage, this.rng);
+    this.gadgets.populateForStage(this.stage, this.rng);
     this.decoys = [];
     this.cameraX = 0;
     this.turkeyQuip = '';
@@ -358,6 +361,13 @@ export class GameEngine {
       this._awardCloseCall('NARROW ESCAPE!', this.turkey.x, this.turkey.y - 28);
     }
 
+    // Interactive Flour-Sack stun traps.
+    this.gadgets.update(dt, this.turkey, this.farmer, this.hound, this.sound, (sx, sy) => {
+      this.score += 200;
+      this.addPopup('FLOUR STUN! +200', sx, sy - 26, '#FFFBEB', 1.2);
+      this.setTurkeyQuip('NICE TRY!', 0.9);
+    });
+
     // Hazards & Collectibles.
     this.hazards.update(dt, this.turkey, this.farmer, this.stage, this.perks, this.rng, this.sound, {
       onCloseCall: (label, px, py) => this._awardCloseCall(label, px, py),
@@ -550,6 +560,22 @@ export class GameEngine {
       this.hound.facing = Math.atan2(this.turkey.y - this.hound.y, this.turkey.x - this.hound.x);
       this.hound.state = HOUND_STATES.BARKING;
       this.hound.setCallout('WOOF!', 1.5);
+      // Place an active corn decoy on the right to showcase stealth distraction mechanics.
+      this.decoys.push({
+        x: baseX + 355,
+        y: this.turkey.y - 68,
+        startX: baseX,
+        startY: this.turkey.y,
+        destX: baseX + 355,
+        destY: this.turkey.y - 68,
+        flight: 0.24,
+        flightDuration: 0.24,
+        active: true,
+        timer: 3.0,
+        maxTimer: 4.2,
+        pulse: 1.2,
+        lured: true,
+      });
       this.emitParticles(this.turkey.x - 28, this.turkey.y, 14, 'feather');
       this.popups = [];
       this.addPopup('CLOSE CALL! +450', this.turkey.x + 88, this.turkey.y - 54, '#FBBF24', 1.5);
